@@ -1224,3 +1224,149 @@ class TestBigQuery(TestCase):
         }
 
         self.assertEqual(result, expected)
+
+    def test_issue_172_window1(self):
+        # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#qualify_clause
+        result = parse(
+            """
+        SELECT * 
+        FROM first_stage
+        QUALIFY (agent_in AND IFNULL(LAG(agent_in) OVER win, FALSE)) = FALSE 
+        WINDOW win AS (PARTITION BY id ORDER BY event_created_at)
+        """
+        )
+        expected = {
+            "from": "first_stage",
+            "qualify": {"eq": [
+                {"and": ["agent_in", {"ifnull": [{"over": "win", "value": {"lag": "agent_in"}}, False]}]},
+                False,
+            ]},
+            "select": "*",
+            "window": {"name": "win", "value": {"orderby": {"value": "event_created_at"}, "partitionby": "id"}},
+        }
+        self.assertEqual(result, expected)
+
+    def test_issue_172_window2(self):
+        sql = """
+        with first_stage AS (
+          SELECT
+            id,
+            created_at,
+            event_created_at,
+            message IN ('test1', 'test2') AS agent_out,
+            message IN ('test3','test4','test5') AS agent_in,
+          FROM
+            project.dataset.table
+          WHERE
+            message IN (
+              'test1',
+              'test2',
+              'test3',
+              'test4',
+              'test5'
+            )
+        ),
+        
+        second_stage AS (
+          SELECT
+            id,
+            created_at,
+            event_created_at AS queue_start_at,
+            agent_in,
+            CASE
+            WHEN LEAD(agent_out) OVER win = TRUE THEN LEAD(event_created_at) OVER win
+            WHEN agent_out THEN NULL
+            ELSE IFNULL(
+            DATETIME_SUB(LEAD(event_created_at) OVER win,INTERVAL 1 MILLISECOND),DATETIME('9999-12-30'))
+            END AS queue_end_at,
+          FROM
+            (
+              SELECT * FROM first_stage
+              QUALIFY (agent_in AND IFNULL(LAG(agent_in) OVER win, FALSE)) = FALSE 
+              WINDOW win AS (
+                  PARTITION BY id
+                  ORDER BY
+                  event_created_at
+              )
+            )
+            WINDOW win AS (
+              PARTITION BY id
+              ORDER BY
+              event_created_at
+            )
+        )
+        select * from second_stage"""
+        result = parse(sql)
+        expected = {
+            "with": [
+                {
+                    "name": "first_stage",
+                    "value": {
+                        "select": [
+                            {"value": "id"},
+                            {"value": "created_at"},
+                            {"value": "event_created_at"},
+                            {"name": "agent_out", "value": {"in": ["message", {"literal": ["test1", "test2"]}]}},
+                            {
+                                "name": "agent_in",
+                                "value": {"in": ["message", {"literal": ["test3", "test4", "test5"]}]},
+                            },
+                        ],
+                        "from": "project.dataset.table",
+                        "where": {"in": ["message", {"literal": ["test1", "test2", "test3", "test4", "test5"]}]},
+                    },
+                },
+                {
+                    "name": "second_stage",
+                    "value": {
+                        "select": [
+                            {"value": "id"},
+                            {"value": "created_at"},
+                            {"name": "queue_start_at", "value": "event_created_at"},
+                            {"value": "agent_in"},
+                            {
+                                "name": "queue_end_at",
+                                "value": {"case": [
+                                    {
+                                        "then": {"over": "win", "value": {"lead": "event_created_at"}},
+                                        "when": {"eq": [{"over": "win", "value": {"lead": "agent_out"}}, True]},
+                                    },
+                                    {"then": {"null": {}}, "when": "agent_out"},
+                                    {"ifnull": [
+                                        {"datetime_sub": [
+                                            {"over": "win", "value": {"lead": "event_created_at"}},
+                                            {"interval": [1, "millisecond"]},
+                                        ]},
+                                        {"datetime": {"literal": "9999-12-30"}},
+                                    ]},
+                                ]},
+                            },
+                        ],
+                        "from": [
+                            {
+                                "select": "*",
+                                "from": "first_stage",
+                                "qualify": {"eq": [
+                                    {"and": [
+                                        "agent_in",
+                                        {"ifnull": [{"over": "win", "value": {"lag": "agent_in"}}, False]},
+                                    ]},
+                                    False,
+                                ]},
+                                "window": {
+                                    "name": "win",
+                                    "value": {"orderby": {"value": "event_created_at"}, "partitionby": "id"},
+                                },
+                            },
+                            {"window": {
+                                "name": "win",
+                                "value": {"orderby": {"value": "event_created_at"}, "partitionby": "id"},
+                            }},
+                        ],
+                    },
+                },
+            ],
+            "select": "*",
+            "from": "second_stage",
+        }
+        self.assertEqual(result, expected)

@@ -429,6 +429,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
         values = VALUES + delimited_list(row) / to_values
 
+        window_clause = identifier("name") + AS + (identifier | over_clause)("value")
+
         unordered_sql = Group(
             values
             | selection
@@ -436,8 +438,11 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 (FROM + delimited_list(table_source) + ZeroOrMore(join))("from")
                 + Optional(WHERE + expression("where"))
                 + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
-                + Optional(HAVING + expression("having"))
-                + Optional(QUALIFY + expression("qualify"))
+                + (
+                    Optional(HAVING + expression("having"))
+                    & Optional(WINDOW + delimited_list(Group(window_clause))("window"))
+                    & Optional(QUALIFY + expression("qualify"))
+                )
             )
         )
 
@@ -718,9 +723,15 @@ def parser(literal_string, simple_ident, sqlserver=False):
                             keyword("delete")/ {"delete": {}}
                             | keyword("update set").suppress()
                             + Dict(delimited_list(Group(identifier + EQ + expression))) / (lambda t: {"update": t})
-                            | (keyword("insert")
-                            + Optional(LB + delimited_list(identifier)("columns") + RB)
-                            + (keyword("default values") | VALUES + (LB + delimited_list(Group(expression)) + RB)("values"))) / to_insert_call
+                            | (
+                                keyword("insert")
+                                + Optional(LB + delimited_list(identifier)("columns") + RB)
+                                + (
+                                    keyword("default values")
+                                    | VALUES + (LB + delimited_list(Group(expression)) + RB)("values")
+                                )
+                            )
+                            / to_insert_call
                         ),
                     )
                 )
