@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase, skip
 
+from mo_parsing.debug import Debugger
 from mo_testing.fuzzytestcase import FuzzyTestCase
 
 from mo_sql_parsing import parse_bigquery as parse
