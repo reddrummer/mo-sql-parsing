@@ -1430,3 +1430,10 @@ class TestSimple(TestCase):
         result = parse(sql)
         expected = {"explain": {"from": "temp", "select": "*"}}
         self.assertEqual(result, expected)
+
+    def test_issue_174_no_from(self):
+        sql = """SELECT 1 WHERE TRUE"""
+        expected = {"select": {"value": 1}, "where": True}
+        result = parse(sql)
+        self.assertEqual(result, expected)
+

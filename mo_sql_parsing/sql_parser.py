@@ -432,17 +432,14 @@ def parser(literal_string, simple_ident, sqlserver=False):
         window_clause = identifier("name") + AS + (identifier | over_clause)("value")
 
         unordered_sql = Group(
-            values
-            | selection
-            + Optional(
-                (FROM + delimited_list(table_source) + ZeroOrMore(join))("from")
-                + Optional(WHERE + expression("where"))
-                + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
-                + (
-                    Optional(HAVING + expression("having"))
-                    & Optional(WINDOW + delimited_list(Group(window_clause))("window"))
-                    & Optional(QUALIFY + expression("qualify"))
-                )
+            (values | selection)
+            + Optional((FROM + delimited_list(table_source) + ZeroOrMore(join))("from"))
+            + Optional(WHERE + expression("where"))
+            + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
+            + (
+                Optional(HAVING + expression("having"))
+                & Optional(WINDOW + delimited_list(Group(window_clause))("window"))
+                & Optional(QUALIFY + expression("qualify"))
             )
         )
 
