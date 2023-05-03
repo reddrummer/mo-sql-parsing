@@ -472,3 +472,57 @@ class TestPostgres(TestCase):
             "format": "json",
         }
         self.assertEqual(result, expected)
+
+    def test_issue_175_extract_dom(self):
+        sql = """SELECT EXTRACT(DAY_OF_MONTH FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["dom", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_dow(self):
+        sql = """SELECT EXTRACT(DAY_OF_WEEK FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["dow", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_doy(self):
+        sql = """SELECT EXTRACT(DAY_OF_YEAR FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["doy", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_dow2(self):
+        sql = """SELECT EXTRACT(DOW FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["dow", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_doy2(self):
+        sql = """SELECT EXTRACT(DOY FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["doy", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_year_of_week(self):
+        sql = """SELECT EXTRACT(YEAR_OF_WEEK FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["yow", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_yow(self):
+        sql = """SELECT EXTRACT(YOW FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["yow", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_decade(self):
+        sql = """SELECT EXTRACT(decade FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["decade", "date"]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_175_extract_millennium(self):
+        sql = """SELECT EXTRACT(millennium FROM date)"""
+        result = parse(sql)
+        expected = {"select": {"value": {"extract": ["millennium", "date"]}}}
+        self.assertEqual(result, expected)
