@@ -1437,3 +1437,16 @@ class TestSimple(TestCase):
         result = parse(sql)
         self.assertEqual(result, expected)
 
+    def test_issue_177_select_values_w_alias(self):
+        sql = """SELECT value1, value2 FROM (VALUES ('A', 'B'), ('C', 'D'), ('E', 'D')) table (value1, value2)"""
+        expected = {
+            "from": {
+                "name": {"table": ["value1", "value2"]},
+                "value": {"from": {"literal": [["A", "B"], ["C", "D"], ["E", "D"]]}},
+            },
+            "select": [{"value": "value1"}, {"value": "value2"}],
+        }
+
+        result = parse(sql)
+        self.assertEqual(result, expected)
+

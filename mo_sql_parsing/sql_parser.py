@@ -427,7 +427,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         ) + comma
 
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
-        values = VALUES + delimited_list(row) / to_values
+        values = (VALUES + delimited_list(row)) / to_values
 
         window_clause = identifier("name") + AS + (identifier | over_clause)("value")
 
