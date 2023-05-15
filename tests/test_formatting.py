@@ -745,3 +745,9 @@ class TestSimple(TestCase):
         result = parse(sql)
         formatted = format(parse(sql))
         self.assertEqual(formatted, sql)
+
+    def test_subquery_as_param_format_back(self):
+        sql = """SELECT DATEDIFF(mm, dwperiod, (SELECT MAX(dwperiod) FROM bdv.S_SKADA_C)) AS A FROM be"""
+        result = parse(sql)
+        formatted = format(parse(sql))
+        self.assertEqual(formatted, sql)
