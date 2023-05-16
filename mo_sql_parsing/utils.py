@@ -614,6 +614,8 @@ def to_union_call(tokens):
         return unions
     elif unions.type.parser_name == "unordered_sql":
         output = dict(unions)  # REMOVE THE Group()
+        if not output:
+            output = unions[0]
     else:
         unions = list(unions)
         sources = [unions[i] for i in range(0, len(unions), 2)]

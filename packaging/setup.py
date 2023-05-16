@@ -15,6 +15,6 @@ setup(
     name='mo-sql-parsing',
     packages=["mo_sql_parsing"],
     url='https://github.com/klahnakoski/mo-sql-parsing',
-    version='9.377.23123',
+    version='9.386.23135',
     zip_safe=True
 )

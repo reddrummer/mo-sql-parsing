@@ -563,6 +563,9 @@ class Formatter:
     def from_(self, json, prec):
         is_join = False
         from_ = json["from"]
+        if isinstance(from_, dict) and "literal" in from_:
+            content = ", ".join(self._literal(row) for row in from_["literal"])
+            return f"VALUES {content}"
         if isinstance(from_, dict) and is_set_op & from_.keys():
             source = self.op(from_, precedence["from"])
             return f"FROM {source}"
