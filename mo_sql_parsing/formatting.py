@@ -311,7 +311,7 @@ class Formatter:
             return key.upper() + "()"  # NOT SURE IF AN EMPTY dict SHOULD BE DELT WITH HERE, OR IN self.format()
         else:
             params = ", ".join(
-                self.dispatch(p) if "select" not in p else f"({self.dispatch(p)})"
+                f"({self.dispatch(p)})" if isinstance(p, dict) and"select" in p else self.dispatch(p)
                 for p in listwrap(value)
             )
             return f"{key.upper()}({params})"
