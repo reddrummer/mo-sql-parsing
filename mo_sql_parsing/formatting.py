@@ -310,10 +310,7 @@ class Formatter:
         if isinstance(value, dict) and len(value) == 0:
             return key.upper() + "()"  # NOT SURE IF AN EMPTY dict SHOULD BE DELT WITH HERE, OR IN self.format()
         else:
-            params = ", ".join(
-                f"({self.dispatch(p)})" if isinstance(p, dict) and"select" in p else self.dispatch(p)
-                for p in listwrap(value)
-            )
+            params = ", ".join(self.dispatch(p, precedence["from"]) for p in listwrap(value))
             return f"{key.upper()}({params})"
 
     def _binary_not(self, value, prec):
