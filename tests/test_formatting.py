@@ -746,9 +746,14 @@ class TestSimple(TestCase):
         formatted = format(parse(sql))
         self.assertEqual(formatted, sql)
 
+    def test_subquery_as_param_format_back(self):
+        sql = """SELECT DATEDIFF(mm, col2, (SELECT MAX(col) FROM dbo.table)) AS A FROM be"""
+        result = parse(sql)
+        formatted = format(parse(sql))
+        self.assertEqual(formatted, sql)
+        
     def test_issue_177_format_select_values_w_alias(self):
         sql = """SELECT value1, value2 FROM (VALUES ('A', 'B'), ('C', 'D'), ('E', 'D')) table (value1, value2)"""
         expected = """SELECT value1, value2 FROM (VALUES ('A', 'B'), ('C', 'D'), ('E', 'D')) AS TABLE(value1, value2)"""
         result = format(parse(sql))
         self.assertEqual(result, expected)
-
