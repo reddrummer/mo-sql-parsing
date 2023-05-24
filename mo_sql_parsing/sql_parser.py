@@ -717,7 +717,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                     + assign(
                         "then",
                         (
-                            keyword("delete")/ {"delete": {}}
+                            keyword("delete") / {"delete": {}}
                             | keyword("update set").suppress()
                             + Dict(delimited_list(Group(identifier + EQ + expression))) / (lambda t: {"update": t})
                             | (
@@ -735,6 +735,17 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 / to_when_call
             )("params")
         ) / to_json_call
+
+        truncate = (
+            keyword("truncate table").suppress()
+            + identifier("truncate")
+            + Optional(
+                WITH
+                + LB
+                + assign("partitions", LB + delimited_list(Group((int_num + TO + int_num)("range")) | int_num) + RB)
+                + RB
+            )
+        )
 
         #############################################################
         # PROCEDURAL
@@ -879,7 +890,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         statement << (
             query
-            | (insert | update | delete | merge)
+            | (insert | update | delete | merge | truncate)
             | (create_table | create_view | create_cache | create_index)
             | (drop_table | drop_view | drop_index)
             | (copy | alter)
