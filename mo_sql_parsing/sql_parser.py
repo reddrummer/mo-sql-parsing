@@ -737,7 +737,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
         ) / to_json_call
 
         truncate = (
-            keyword("truncate table").suppress()
+            Keyword("truncate", caseless=True).suppress()
+            + Optional(TABLE)
             + identifier("truncate")
             + Optional(
                 WITH

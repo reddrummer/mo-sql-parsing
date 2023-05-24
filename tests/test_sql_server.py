@@ -249,3 +249,9 @@ class TestSqlServer(TestCase):
         result = parse(sql)
         expected = {"truncate": "a.b", "partitions": [1, {"range": [2, 9]}, 4]}
         self.assertEqual(result, expected)
+
+    def test_issue_179_truncate3(self):
+        sql = """TRUNCATE a.b WITH (PARTITIONS (1,2 to 9,4))"""
+        result = parse(sql)
+        expected = {"truncate": "a.b", "partitions": [1, {"range": [2, 9]}, 4]}
+        self.assertEqual(result, expected)
