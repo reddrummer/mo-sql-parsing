@@ -757,3 +757,9 @@ class TestSimple(TestCase):
         expected = """SELECT value1, value2 FROM (VALUES ('A', 'B'), ('C', 'D'), ('E', 'D')) AS TABLE(value1, value2)"""
         result = format(parse(sql))
         self.assertEqual(result, expected)
+
+    def test_issue_181_select_distinct(self):
+        sql ="""select distinct (SELECT GETDATE() as dd) as currentdate"""
+        expected = """SELECT DISTINCT (SELECT GETDATE() AS dd) AS currentdate"""
+        result = format(parse(sql))
+        self.assertEqual(result, expected)
