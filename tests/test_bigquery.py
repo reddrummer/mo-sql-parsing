@@ -1084,14 +1084,8 @@ class TestBigQuery(TestCase):
                 {
                     "name": "flow_name",
                     "value": {"case": [
-                        {
-                            "then": {"literal": "flow 2"},
-                            "when": {"eq": ["ee._id", {"literal": "flow2222222222222"}]},
-                        },
-                        {
-                            "then": {"literal": "flow 1"},
-                            "when": {"eq": ["ee._id", {"literal": "flow1111111111111"}]},
-                        },
+                        {"then": {"literal": "flow 2"}, "when": {"eq": ["ee._id", {"literal": "flow2222222222222"}]},},
+                        {"then": {"literal": "flow 1"}, "when": {"eq": ["ee._id", {"literal": "flow1111111111111"}]},},
                         {"null": {}},
                     ]},
                 },
@@ -1370,4 +1364,84 @@ class TestBigQuery(TestCase):
             "select": "*",
             "from": "second_stage",
         }
+        self.assertEqual(result, expected)
+
+    def test_issue_182_pivot_w_name(self):
+        sql = """SELECT * from (
+              SELECT
+                rt.projectId,
+                rt.datasetId,
+                rt.tableId,
+                count(distinct rt.jobId) jobs
+              FROM
+                `project.dataset.table_test` rt
+              Group by 1,2,3,4
+            
+            ) PIVOT (
+              sum(jobs) as jobs
+              for statementType in (
+                'BEGIN_TRANSACTION'
+                , 'SCRIPT'
+                , 'MERGE'
+                , 'CREATE_TABLE_AS_SELECT'
+                , 'UPDATE'
+                , 'SELECT'
+                , 'TRUNCATE_TABLE'
+                , 'DELETE'
+                , 'CREATE_VIEW'
+                , 'DROP_VIEW'
+                , 'DROP_TABLE'
+                , 'COMMIT_TRANSACTION'
+                , 'INSERT'
+                , 'CREATE_TABLE_FUNCTION'
+                , 'ASSERT'
+                , 'CREATE_FUNCTION'
+                , 'QUERY_STATEMENT_TYPE_UNSPECIFIED'
+                , 'ALTER_TABLE'
+                , 'CREATE_TABLE'
+              )
+            )"""
+        result = parse(sql)
+        expected = {
+            "select": "*",
+            "from": [
+                {
+                    "select": [
+                        {"value": "rt.projectId"},
+                        {"value": "rt.datasetId"},
+                        {"value": "rt.tableId"},
+                        {"name": "jobs", "value": {"count": "rt.jobId", "distinct": True}},
+                    ],
+                    "from": {"name": "rt", "value": "project..dataset..table_test"},
+                    "groupby": [{"value": 1}, {"value": 2}, {"value": 3}, {"value": 4}],
+                },
+                {"pivot": {
+                    "name": "jobs",
+                    "aggregate": {"sum": "jobs"},
+                    "for": "statementType",
+                    "in": {"literal": [
+                        "BEGIN_TRANSACTION",
+                        "SCRIPT",
+                        "MERGE",
+                        "CREATE_TABLE_AS_SELECT",
+                        "UPDATE",
+                        "SELECT",
+                        "TRUNCATE_TABLE",
+                        "DELETE",
+                        "CREATE_VIEW",
+                        "DROP_VIEW",
+                        "DROP_TABLE",
+                        "COMMIT_TRANSACTION",
+                        "INSERT",
+                        "CREATE_TABLE_FUNCTION",
+                        "ASSERT",
+                        "CREATE_FUNCTION",
+                        "QUERY_STATEMENT_TYPE_UNSPECIFIED",
+                        "ALTER_TABLE",
+                        "CREATE_TABLE",
+                    ]},
+                }},
+            ],
+        }
+
         self.assertEqual(result, expected)
