@@ -376,7 +376,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         pivot_join = (
             PIVOT("op")
             + (
-                LB + expression("aggregate") + assign("for", identifier) + (IN + expression("in")) + RB + alias
+                LB + expression("aggregate") + alias + assign("for", identifier) + (IN + expression("in")) + RB + alias
             )("kwargs")
         ) / to_pivot_call
 
