@@ -267,3 +267,22 @@ class TestMySql(TestCase):
             "target": {"name": "Target", "value": "TargetProducts"},
         }
         self.assertEqual(result, expected)
+
+    def test_issue_180_subsquery(self):
+        sql = """SELECT concat( 
+            ( SELECT value FROM schema.table a where b = c ), 
+            RIGHT( '00' + CAST(MONTH(d) AS VARCHAR(2)), 2 ) 
+        ) AS res"""
+        result = parse(sql)
+        expected = {"select": {
+            "name": "res",
+            "value": {"concat": [
+                {
+                    "from": {"name": "a", "value": "schema.table"},
+                    "select": {"value": "value"},
+                    "where": {"eq": ["b", "c"]},
+                },
+                {"right": [{"add": [{"literal": "00"}, {"cast": [{"month": "d"}, {"varchar": 2}]}]}, 2]},
+            ]},
+        }}
+        self.assertEqual(result, expected)
