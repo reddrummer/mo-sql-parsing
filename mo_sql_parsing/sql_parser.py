@@ -68,7 +68,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         with whitespaces.NO_WHITESPACE:
             identifier = ~RESERVED + ident
-        function_name = ~(UNION | FROM | WHERE) + ident
+        function_name = ~(UNION | FROM | WHERE | SELECT) + ident
 
         # EXPRESSIONS
         expression = Forward()
@@ -289,7 +289,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
             function_name("op")
             + LB
             + Optional(flag("distinct"))
-            + Optional(Group(query)("params") | delimited_list(one_param))
+            + Optional(delimited_list(one_param) | Group(query)("params"))
             + Optional((keyword("respect") | keyword("ignore"))("nulls") + keyword("nulls").suppress())
             + Optional(ORDER_BY + delimited_list(Group(sort_column))("orderby"))
             + Optional(assign("limit", expression))
