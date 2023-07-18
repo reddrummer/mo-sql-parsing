@@ -571,8 +571,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Optional(flag("unique"))
                 + Optional(INDEX | KEY)
                 + Optional(identifier("name"))
-                + index_type
                 + index_column_names
+                + index_type
                 + index_options
             )("index")
             | assign("check", LB + expression + RB)
