@@ -293,3 +293,9 @@ class TestMySql(TestCase):
             "name": "tt",
         }}
         self.assertEqual(result, expected)
+
+    def test_issue_186_limit(self):
+        sql = """SELECT * from t1 limit 1,10"""
+        result = parse(sql)
+        expected = {"select": "*", "from": "t1", "offset": 1, "limit": 10}
+        self.assertEqual(result, expected)

@@ -509,7 +509,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 + rows
                 + Optional(keyword("only"))
             )
-            & Optional(assign("limit", expression))
+            & Optional(LIMIT + ((expression("offset") + "," + expression("limit")) | expression("limit")))
         )
 
         # https://www.postgresql.org/docs/current/sql-select.html
