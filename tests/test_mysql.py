@@ -6,11 +6,8 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
-
-from mo_parsing.debug import Debugger
 
 from mo_sql_parsing import parse_mysql, parse
 
@@ -285,4 +282,20 @@ class TestMySql(TestCase):
                 {"right": [{"add": [{"literal": "00"}, {"cast": [{"month": "d"}, {"varchar": 2}]}]}, 2]},
             ]},
         }}
+        self.assertEqual(result, expected)
+
+    def test_issue_187_using_btree(self):
+        sql = """create table tt (n varchar(10), nn varchar(6), key `inx_nn` (`nn`) using btree );"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "n", "type": {"varchar": 10}}, {"name": "nn", "type": {"varchar": 6}}],
+            "constraint": {"index": {"columns": "nn", "name": "inx_nn", "using": "btree"}},
+            "name": "tt",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_issue_186_limit(self):
+        sql = """SELECT * from t1 limit 1,10"""
+        result = parse(sql)
+        expected = {"select": "*", "from": "t1", "offset": 1, "limit": 10}
         self.assertEqual(result, expected)

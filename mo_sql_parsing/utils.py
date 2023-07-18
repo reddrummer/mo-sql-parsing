@@ -471,8 +471,8 @@ def to_when_call(tokens):
 
 def to_match_expr(tokens):
     if "expr" in tokens:
-        return Call("and", [tokens["cond"], tokens['expr']])
-    return tokens['cond']
+        return Call("and", [tokens["cond"], tokens["expr"]])
+    return tokens["cond"]
 
 
 def to_join_call(tokens):
@@ -776,7 +776,7 @@ mysql_doublequote_string = Regex(r'\"(\"\"|[^"])*\"') / double_literal
 
 # BASIC IDENTIFIERS
 ansi_ident = Regex(r'\"(\"\"|[^"])*\"') / double_column
-mysql_backtick_ident = Regex(r"\`(\`\`|[^`])*\`") / backtick_column
+mysql_backtick_ident = Regex(r"`(``|[^`])*`") / backtick_column
 sqlserver_ident = Regex(r"\[(\]\]|[^\]])*\]") / square_column
 
 copy_params = (

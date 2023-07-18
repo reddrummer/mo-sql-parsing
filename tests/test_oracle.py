@@ -6,7 +6,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -49,11 +48,5 @@ class TestOracle(TestCase):
     def test_natural_join(self):
         sql = """select * from A natural join b"""
         result = parse(sql)
-        expected = {
-            "select": "*",
-            "from": [
-                "A",
-                {"natural join": "b"}
-            ]
-        }
+        expected = {"select": "*", "from": ["A", {"natural join": "b"}]}
         self.assertEqual(result, expected)

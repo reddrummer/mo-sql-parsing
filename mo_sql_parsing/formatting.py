@@ -7,7 +7,6 @@
 # Author: Beto Dealmeida (beto@dealmeida.net)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 import re
 
@@ -554,7 +553,7 @@ class Formatter:
         return f"SELECT DISTINCT ON ({param})"
 
     def select_distinct(self, json, prec):
-        param = ", ".join(self.dispatch(s, precedence['select']) for s in listwrap(json["select_distinct"]))
+        param = ", ".join(self.dispatch(s, precedence["select"]) for s in listwrap(json["select_distinct"]))
         return f"SELECT DISTINCT {param}"
 
     def from_(self, json, prec):
