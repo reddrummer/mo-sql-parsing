@@ -7,7 +7,6 @@
 # Author: Beto Dealmeida (beto@dealmeida.net)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -751,15 +750,17 @@ class TestSimple(TestCase):
         result = parse(sql)
         formatted = format(parse(sql))
         self.assertEqual(formatted, sql)
-        
+
     def test_issue_177_format_select_values_w_alias(self):
         sql = """SELECT value1, value2 FROM (VALUES ('A', 'B'), ('C', 'D'), ('E', 'D')) table (value1, value2)"""
-        expected = """SELECT value1, value2 FROM (VALUES ('A', 'B'), ('C', 'D'), ('E', 'D')) AS TABLE(value1, value2)"""
+        expected = (
+            """SELECT value1, value2 FROM (VALUES ('A', 'B'), ('C', 'D'), ('E', 'D')) AS TABLE(value1, value2)"""
+        )
         result = format(parse(sql))
         self.assertEqual(result, expected)
 
     def test_issue_181_select_distinct(self):
-        sql ="""select distinct (SELECT GETDATE() as dd) as currentdate"""
+        sql = """select distinct (SELECT GETDATE() as dd) as currentdate"""
         expected = """SELECT DISTINCT (SELECT GETDATE() AS dd) AS currentdate"""
         result = format(parse(sql))
         self.assertEqual(result, expected)

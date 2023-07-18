@@ -6,7 +6,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -1093,10 +1092,7 @@ class TestSimpleUsingOperators(TestCase):
             "where": {
                 "args": [
                     {"args": ["a", 1], "op": "eq"},
-                    [
-                        {"args": [{"args": ["b", 2], "op": "eq"}, {"args": ["c", 3], "op": "eq"}], "op": "and"},
-                        False,
-                    ],
+                    [{"args": [{"args": ["b", 2], "op": "eq"}, {"args": ["c", 3], "op": "eq"}], "op": "and"}, False,],
                 ],
                 "op": "and",
             },
@@ -1227,10 +1223,7 @@ class TestSimpleUsingOperators(TestCase):
                         {"args": ["ra", 180, 181], "op": "between"},
                         {"args": ["dec", -0.5, 0.5], "op": "between"},
                         {"args": [{"args": ["flags_r", {"hex": "10000000"}], "op": "binary_and"}, 0], "op": "neq"},
-                        {
-                            "args": [{"args": ["flags_r", {"hex": "8100000c00a4"}], "op": "binary_and"}, 0],
-                            "op": "eq",
-                        },
+                        {"args": [{"args": ["flags_r", {"hex": "8100000c00a4"}], "op": "binary_and"}, 0], "op": "eq",},
                         {
                             "args": [
                                 {
@@ -1247,10 +1240,7 @@ class TestSimpleUsingOperators(TestCase):
                                     "args": [{"args": ["flags_r", {"hex": "100000000000"}], "op": "binary_and"}, 0],
                                     "op": "eq",
                                 },
-                                {
-                                    "args": [{"args": ["flags_r", {"hex": "1000"}], "op": "binary_and"}, 0],
-                                    "op": "eq",
-                                },
+                                {"args": [{"args": ["flags_r", {"hex": "1000"}], "op": "binary_and"}, 0], "op": "eq",},
                             ],
                             "op": "or",
                         },

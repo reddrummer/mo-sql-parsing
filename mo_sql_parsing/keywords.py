@@ -142,7 +142,11 @@ VIEW = keyword("view")
 
 
 joins = (
-    (Optional(CROSS | OUTER | INNER | NATURAL | ((FULL | LEFT | RIGHT) + Optional(INNER | OUTER))) + JOIN + Optional(LATERAL))
+    (
+        Optional(CROSS | OUTER | INNER | NATURAL | ((FULL | LEFT | RIGHT) + Optional(INNER | OUTER)))
+        + JOIN
+        + Optional(LATERAL)
+    )
     | LATERAL + Optional(VIEW + Optional(OUTER))
     | (CROSS | OUTER) + APPLY
 ) / (lambda tokens: " ".join(tokens).lower())
@@ -439,5 +443,4 @@ durations = {
     "M": "month",
     "y": "year",
     "c": "century",
-
 }

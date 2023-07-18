@@ -6,7 +6,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -1355,10 +1354,7 @@ class TestSimple(TestCase):
         s = format(p)
         self.assertEqual(
             p,
-            {
-                "from": "my_table",
-                "select": {"value": {"characters": {"literal": ".1"}, "trim": {"trim": "column1"}}},
-            },
+            {"from": "my_table", "select": {"value": {"characters": {"literal": ".1"}, "trim": {"trim": "column1"}}},},
         )
         self.assertEqual(s, """SELECT TRIM(\'.1\' FROM TRIM(column1)) FROM my_table""")
 
@@ -1449,4 +1445,3 @@ class TestSimple(TestCase):
 
         result = parse(sql)
         self.assertEqual(result, expected)
-
