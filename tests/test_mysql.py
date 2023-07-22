@@ -299,3 +299,50 @@ class TestMySql(TestCase):
         result = parse(sql)
         expected = {"select": "*", "from": "t1", "offset": 1, "limit": 10}
         self.assertEqual(result, expected)
+
+    def test_issue_185_group_concat(self):
+        sql = """SELECT substring_index(group_concat(manager.id order by manager.create DESC separator ','), ',', 1) AS s_id FROM a"""
+        result = parse(sql)
+        expected = {
+            "from": "a",
+            "select": {
+                "name": "s_id",
+                "value": {"substring_index": [
+                    {
+                        "group_concat": "manager.id",
+                        "orderby": {"sort": "desc", "value": "manager.create"},
+                        "separator": {"literal": ","},
+                    },
+                    {"literal": ","},
+                    1,
+                ]},
+            },
+        }
+        self.assertEqual(result, expected)
+
+    def test_issue_185_on_update(self):
+        sql = """create table a (lastcreated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"""
+        result = parse(sql)
+        expected = {"create table": {
+            "name": "a",
+            "columns": {
+                "default": "CURRENT_TIMESTAMP",
+                "name": "lastcreated",
+                "on_update": "CURRENT_TIMESTAMP",
+                "type": {"datetime": {}},
+            },
+        }}
+        self.assertEqual(result, expected)
+
+    def test_issue_185_algorithm(self):
+        # CREATE [OR REPLACE][ALGORITHM = {MERGE | TEMPTABLE | UNDEFINED}] VIEW
+        sql = """CREATE OR REPLACE ALGORITHM = UNDEFINED VIEW view_name AS SELECT *"""
+        result = parse(sql)
+        expected = {"create view": {
+            "algorithm": "undefined",
+            "name": "view_name",
+            "query": {"select": "*"},
+            "replace": True,
+        }}
+
+        self.assertEqual(result, expected)

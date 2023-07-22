@@ -293,6 +293,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
             + Optional((keyword("respect") | keyword("ignore"))("nulls") + keyword("nulls").suppress())
             + Optional(ORDER_BY + delimited_list(Group(sort_column))("orderby"))
             + Optional(assign("limit", expression))
+            + Optional(assign("separator", expression))
             + RB
         ) / to_json_call
 
@@ -606,6 +607,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         create_view = (
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
+            + Optional(keyword("algorithm").suppress() + EQ + (keyword("merge") | keyword("temptable") | keyword("undefined"))("algorithm"))
             + temporary
             + VIEW.suppress()
             + Optional((keyword("if not exists") / False)("replace"))
