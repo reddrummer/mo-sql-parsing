@@ -319,3 +319,17 @@ class TestMySql(TestCase):
             },
         }
         self.assertEqual(result, expected)
+
+    def test_issue_185_group_concat2(self):
+        sql = """create table a (lastcreated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"""
+        result = parse(sql)
+        expected = {"create table": {
+            "name": "a",
+            "columns": {
+                "default": "CURRENT_TIMESTAMP",
+                "name": "lastcreated",
+                "on_update": "CURRENT_TIMESTAMP",
+                "type": {"datetime": {}},
+            },
+        }}
+        self.assertEqual(result, expected)
