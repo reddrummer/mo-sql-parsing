@@ -607,6 +607,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         create_view = (
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
+            + Optional(keyword("algorithm").suppress() + EQ + (keyword("merge") | keyword("temptable") | keyword("undefined"))("algorithm"))
             + temporary
             + VIEW.suppress()
             + Optional((keyword("if not exists") / False)("replace"))

@@ -320,7 +320,7 @@ class TestMySql(TestCase):
         }
         self.assertEqual(result, expected)
 
-    def test_issue_185_group_concat2(self):
+    def test_issue_185_on_update(self):
         sql = """create table a (lastcreated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"""
         result = parse(sql)
         expected = {"create table": {
@@ -332,4 +332,17 @@ class TestMySql(TestCase):
                 "type": {"datetime": {}},
             },
         }}
+        self.assertEqual(result, expected)
+
+    def test_issue_185_algorithm(self):
+        # CREATE [OR REPLACE][ALGORITHM = {MERGE | TEMPTABLE | UNDEFINED}] VIEW
+        sql = """CREATE OR REPLACE ALGORITHM = UNDEFINED VIEW view_name AS SELECT *"""
+        result = parse(sql)
+        expected = {"create view": {
+            "algorithm": "undefined",
+            "name": "view_name",
+            "query": {"select": "*"},
+            "replace": True,
+        }}
+
         self.assertEqual(result, expected)
