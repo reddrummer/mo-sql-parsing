@@ -299,3 +299,23 @@ class TestMySql(TestCase):
         result = parse(sql)
         expected = {"select": "*", "from": "t1", "offset": 1, "limit": 10}
         self.assertEqual(result, expected)
+
+    def test_issue_185_group_concat(self):
+        sql = """SELECT substring_index(group_concat(manager.id order by manager.create DESC separator ','), ',', 1) AS s_id FROM a"""
+        result = parse(sql)
+        expected = {
+            "from": "a",
+            "select": {
+                "name": "s_id",
+                "value": {"substring_index": [
+                    {
+                        "group_concat": "manager.id",
+                        "orderby": {"sort": "desc", "value": "manager.create"},
+                        "separator": {"literal": ","},
+                    },
+                    {"literal": ","},
+                    1,
+                ]},
+            },
+        }
+        self.assertEqual(result, expected)
