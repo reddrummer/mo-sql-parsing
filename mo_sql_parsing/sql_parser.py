@@ -553,7 +553,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         # MySQL's index_type := Using + ( "BTREE" | "HASH" )
         index_type = Optional(assign("using", ident("index_type")))
 
-        index_column_names = LB + delimited_list(identifier("columns")) + RB
+        index_column_names = LB + delimited_list((identifier("value") + Optional(LB + int_num("length") + RB)) / to_index_part)("columns") + RB
 
         column_def_delete = assign("on delete", (keyword("cascade") | keyword("set null") | keyword("set default")),)
 
@@ -607,7 +607,11 @@ def parser(literal_string, simple_ident, sqlserver=False):
         create_view = (
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
-            + Optional(keyword("algorithm").suppress() + EQ + (keyword("merge") | keyword("temptable") | keyword("undefined"))("algorithm"))
+            + Optional(
+                keyword("algorithm").suppress()
+                + EQ
+                + (keyword("merge") | keyword("temptable") | keyword("undefined"))("algorithm")
+            )
             + temporary
             + VIEW.suppress()
             + Optional((keyword("if not exists") / False)("replace"))
