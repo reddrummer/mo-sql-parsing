@@ -311,6 +311,13 @@ def to_trim_call(tokens):
     return Call("trim", [frum], {"characters": tokens["chars"], "direction": tokens["direction"]},)
 
 
+def to_index_part(tokens):
+    value = dict(tokens)
+    if len(value)==1:
+        return value['value']
+    return value
+
+
 def to_kwarg(tokens):
     return {k: v for k, v in [tuple(tokens)]}
 

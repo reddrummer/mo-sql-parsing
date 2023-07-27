@@ -9,6 +9,8 @@
 
 from unittest import TestCase
 
+from mo_parsing.debug import Debugger
+
 from mo_sql_parsing import parse_mysql, parse
 
 
@@ -345,4 +347,18 @@ class TestMySql(TestCase):
             "replace": True,
         }}
 
+        self.assertEqual(result, expected)
+
+    def test_issue_185_index_length(self):
+        sql = """CREATE TABLE IF NOT EXISTS industry_i18n (id bigint(20) NOT NULL AUTO_INCREMENT, KEY locale_id (master_id,locale(255)));"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": {"auto_increment": True, "name": "id", "nullable": False, "type": {"bigint": 20}},
+            "constraint": {"index": {
+                "name": "locale_id",
+                "columns": ["master_id", {"value": "locale", "length": 255}],
+            }},
+            "name": "industry_i18n",
+            "replace": False,
+        }}
         self.assertEqual(result, expected)
