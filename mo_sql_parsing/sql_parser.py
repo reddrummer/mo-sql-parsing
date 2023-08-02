@@ -350,8 +350,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Literal("*")
                 | infix_notation(
                     compound,
-                    [
-                        (dynamic_accessor, 1, LEFT_ASSOC, to_offset,),
+                    ([] if sqlserver else [(dynamic_accessor, 1, LEFT_ASSOC, to_offset,)])
+                    + [
                         (simple_accessor, 1, LEFT_ASSOC, to_offset,),
                         (accessor, 1, LEFT_ASSOC, to_offset),
                         (window_clause, 1, LEFT_ASSOC, to_window_mod),
@@ -553,7 +553,11 @@ def parser(literal_string, simple_ident, sqlserver=False):
         # MySQL's index_type := Using + ( "BTREE" | "HASH" )
         index_type = Optional(assign("using", ident("index_type")))
 
-        index_column_names = LB + delimited_list((identifier("value") + Optional(LB + int_num("length") + RB)) / to_index_part)("columns") + RB
+        index_column_names = (
+            LB
+            + delimited_list((identifier("value") + Optional(LB + int_num("length") + RB)) / to_index_part)("columns")
+            + RB
+        )
 
         column_def_delete = assign("on delete", (keyword("cascade") | keyword("set null") | keyword("set default")),)
 
