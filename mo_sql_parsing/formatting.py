@@ -465,12 +465,9 @@ class Formatter:
     def _join_on(self, json, prec):
         detected_join = join_keywords & set(json.keys())
         if len(detected_join) == 0:
-            raise Exception(
-                'Fail to detect join type! Detected: "{}" Except one of: "{}"'.format(
-                    [on_keyword for on_keyword in json if on_keyword != "on"][0],
-                    '", "'.join(join_keywords),
-                )
-            )
+            raise Exception('Fail to detect join type! Detected: "{}" Except one of: "{}"'.format(
+                [on_keyword for on_keyword in json if on_keyword != "on"][0], '", "'.join(join_keywords),
+            ))
 
         join_keyword = detected_join.pop()
 
