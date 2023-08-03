@@ -313,8 +313,8 @@ def to_trim_call(tokens):
 
 def to_index_part(tokens):
     value = dict(tokens)
-    if len(value)==1:
-        return value['value']
+    if len(value) == 1:
+        return value["value"]
     return value
 
 

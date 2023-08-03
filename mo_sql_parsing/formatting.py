@@ -312,6 +312,9 @@ class Formatter:
             params = ", ".join(self.dispatch(p, precedence["from"]) for p in listwrap(value))
             return f"{key.upper()}({params})"
 
+    def _regexp(self, value, prec):
+        return f"{self.dispatch(value[0])} REGEXP {self.dispatch(value[1])}"
+
     def _binary_not(self, value, prec):
         return "~{0}".format(self.dispatch(value))
 

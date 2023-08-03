@@ -764,3 +764,10 @@ class TestSimple(TestCase):
         expected = """SELECT DISTINCT (SELECT GETDATE() AS dd) AS currentdate"""
         result = format(parse(sql))
         self.assertEqual(result, expected)
+
+
+    def test_regexp_formated(self):
+        sql = """SELECT * FROM dbo.table WHERE col REGEXP '[^0-9A-Za-z]'"""
+        expected = """SELECT * FROM dbo.table WHERE col REGEXP '[^0-9A-Za-z]'"""
+        result = format(parse(sql))
+        self.assertEqual(result, expected)
