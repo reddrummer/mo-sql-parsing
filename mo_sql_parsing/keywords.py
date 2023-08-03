@@ -99,7 +99,6 @@ GTE = Literal(">=").set_parser_name("gte")
 LTE = Literal("<=").set_parser_name("lte")
 LT = Literal("<").set_parser_name("lt")
 GT = Literal(">").set_parser_name("gt")
-# REGEXP = Literal("regexp").set_parser_name("rgx")
 EEQ = (
     # conservative equality  https://github.com/klahnakoski/jx-sqlite/blob/dev/docs/Logical%20Equality.md#definitions
     Literal("==")
