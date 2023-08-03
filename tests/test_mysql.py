@@ -11,7 +11,7 @@ from unittest import TestCase
 
 from mo_parsing.debug import Debugger
 
-from mo_sql_parsing import parse_mysql, parse
+from mo_sql_parsing import parse, parse_mysql
 
 
 class TestMySql(TestCase):
@@ -361,4 +361,10 @@ class TestMySql(TestCase):
             "name": "industry_i18n",
             "replace": False,
         }}
+        self.assertEqual(result, expected)
+
+    def test_issue_185_index_length(self):
+        sql = """SELECT * FROM dbo.table where col  REGEXP '[^0-9A-Za-z]'"""
+        result = parse(sql)
+        expected = {'select': '*', 'from': 'dbo.table', 'where': {'regexp': ['col', {'literal': '[^0-9A-Za-z]'}]}}
         self.assertEqual(result, expected)
