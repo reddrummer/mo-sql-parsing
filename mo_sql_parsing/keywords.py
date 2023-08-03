@@ -119,6 +119,7 @@ INDF = (
     # https://prestodb.io/docs/current/functions/comparison.html#is-distinct-from-and-is-not-distinct-from
     keyword("is not distinct from").set_parser_name("ne!")
 )
+REGEXP = keyword("regexp").set_parser_name("rgx")
 NEQ = (Literal("!=") | Literal("<>")).set_parser_name("neq")
 LAMBDA = Literal("->").set_parser_name("lambda")
 
@@ -287,6 +288,7 @@ precedence = {
     "lt": 5,
     "gt": 6,
     "eq": 7,
+    "rgx": 7,
     "neq": 7,
     "missing": 7,
     "exists": 7,
@@ -353,6 +355,7 @@ KNOWN_OPS = [
     AND,
     OR,
     LAMBDA,
+    REGEXP,
 ]
 
 times = ["now", "today", "tomorrow", "eod"]
