@@ -99,6 +99,7 @@ GTE = Literal(">=").set_parser_name("gte")
 LTE = Literal("<=").set_parser_name("lte")
 LT = Literal("<").set_parser_name("lt")
 GT = Literal(">").set_parser_name("gt")
+# REGEXP = Literal("regexp").set_parser_name("rgx")
 EEQ = (
     # conservative equality  https://github.com/klahnakoski/jx-sqlite/blob/dev/docs/Logical%20Equality.md#definitions
     Literal("==")
@@ -119,6 +120,7 @@ INDF = (
     # https://prestodb.io/docs/current/functions/comparison.html#is-distinct-from-and-is-not-distinct-from
     keyword("is not distinct from").set_parser_name("ne!")
 )
+REGEXP = keyword("regexp").set_parser_name("rgx")
 NEQ = (Literal("!=") | Literal("<>")).set_parser_name("neq")
 LAMBDA = Literal("->").set_parser_name("lambda")
 
@@ -142,7 +144,11 @@ VIEW = keyword("view")
 
 
 joins = (
-    (Optional(CROSS | OUTER | INNER | NATURAL | ((FULL | LEFT | RIGHT) + Optional(INNER | OUTER))) + JOIN + Optional(LATERAL))
+    (
+        Optional(CROSS | OUTER | INNER | NATURAL | ((FULL | LEFT | RIGHT) + Optional(INNER | OUTER)))
+        + JOIN
+        + Optional(LATERAL)
+    )
     | LATERAL + Optional(VIEW + Optional(OUTER))
     | (CROSS | OUTER) + APPLY
 ) / (lambda tokens: " ".join(tokens).lower())
@@ -168,76 +174,78 @@ TO = Keyword("to", caseless=True).suppress()
 SIMILAR_TO = Group(_SIMILAR + TO).set_parser_name("similar_to")
 NOT_SIMILAR_TO = Group(NOT + _SIMILAR + TO).set_parser_name("not_similar_to")
 
-RESERVED = MatchFirst([
-    # ONY INCLUDE SINGLE WORDS
-    AND,
-    AS,
-    ASC,
-    BETWEEN,
-    BY,
-    CASE,
-    COLLATE,
-    CONSTRAINT,
-    CREATE,
-    CROSS,
-    DESC,
-    DISTINCT,
-    EXCEPT,
-    ELSE,
-    END,
-    FALSE,
-    FETCH,
-    FOREIGN,
-    FOR,
-    FROM,
-    FULL,
-    GROUP_BY,
-    GROUP,
-    HAVING,
-    IN,
-    INNER,
-    INTERSECT,
-    IS_NOT,
-    IS,
-    JOIN,
-    LATERAL,
-    LEFT,
-    LIKE,
-    LIMIT,
-    MINUS,
-    NATURAL,
-    NOCASE,
-    NOT,
-    NULL,
-    OFFSET,
-    ON,
-    OR,
-    ORDER,
-    OUTER,
-    OVER,
-    PARTITION,
-    PRIMARY,
-    PIVOT,
-    QUALIFY,
-    REFERENCES,
-    RIGHT,
-    RLIKE,
-    SELECT,
-    SET,
-    TABLESAMPLE,
-    THEN,
-    TRUE,
-    UNION,
-    UNIQUE,
-    UNNEST,
-    UNPIVOT,
-    USING,
-    WHEN,
-    WHERE,
-    WINDOW,
-    WITH,
-    WITHIN,
-])
+RESERVED = MatchFirst(
+    [
+        # ONY INCLUDE SINGLE WORDS
+        AND,
+        AS,
+        ASC,
+        BETWEEN,
+        BY,
+        CASE,
+        COLLATE,
+        CONSTRAINT,
+        CREATE,
+        CROSS,
+        DESC,
+        DISTINCT,
+        EXCEPT,
+        ELSE,
+        END,
+        FALSE,
+        FETCH,
+        FOREIGN,
+        FOR,
+        FROM,
+        FULL,
+        GROUP_BY,
+        GROUP,
+        HAVING,
+        IN,
+        INNER,
+        INTERSECT,
+        IS_NOT,
+        IS,
+        JOIN,
+        LATERAL,
+        LEFT,
+        LIKE,
+        LIMIT,
+        MINUS,
+        NATURAL,
+        NOCASE,
+        NOT,
+        NULL,
+        OFFSET,
+        ON,
+        OR,
+        ORDER,
+        OUTER,
+        OVER,
+        PARTITION,
+        PRIMARY,
+        PIVOT,
+        QUALIFY,
+        REFERENCES,
+        RIGHT,
+        RLIKE,
+        SELECT,
+        SET,
+        TABLESAMPLE,
+        THEN,
+        TRUE,
+        UNION,
+        UNIQUE,
+        UNNEST,
+        UNPIVOT,
+        USING,
+        WHEN,
+        WHERE,
+        WINDOW,
+        WITH,
+        WITHIN,
+    ]
+)
 
 LB = Literal("(").suppress()
 RB = Literal(")").suppress()
@@ -283,6 +291,7 @@ precedence = {
     "lt": 5,
     "gt": 6,
     "eq": 7,
+    "rgx": 7,
     "neq": 7,
     "missing": 7,
     "exists": 7,
@@ -349,6 +358,7 @@ KNOWN_OPS = [
     AND,
     OR,
     LAMBDA,
+    REGEXP,
 ]
 
 times = ["now", "today", "tomorrow", "eod"]
@@ -439,5 +449,4 @@ durations = {
     "M": "month",
     "y": "year",
     "c": "century",
-
 }
