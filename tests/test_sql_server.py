@@ -6,7 +6,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -230,4 +229,34 @@ class TestSqlServer(TestCase):
             "select": {"value": {"try_cast": ["a", {"decimal": [10, 3]}]}},
             "from": "b.c",
         }
+        self.assertEqual(result, expected)
+
+    def test_issue_179_truncate1(self):
+        sql = """TRUNCATE TABLE a.b"""
+        result = parse(sql)
+        expected = {"truncate": "a.b"}
+        self.assertEqual(result, expected)
+
+    def test_issue_179_truncate2(self):
+        sql = """TRUNCATE TABLE a.b WITH (PARTITIONS (1,2,3))"""
+        result = parse(sql)
+        expected = {"truncate": "a.b", "partitions": [1, 2, 3]}
+        self.assertEqual(result, expected)
+
+    def test_issue_179_truncate3(self):
+        sql = """TRUNCATE TABLE a.b WITH (PARTITIONS (1,2 to 9,4))"""
+        result = parse(sql)
+        expected = {"truncate": "a.b", "partitions": [1, {"range": [2, 9]}, 4]}
+        self.assertEqual(result, expected)
+
+    def test_issue_179_truncate3(self):
+        sql = """TRUNCATE a.b WITH (PARTITIONS (1,2 to 9,4))"""
+        result = parse(sql)
+        expected = {"truncate": "a.b", "partitions": [1, {"range": [2, 9]}, 4]}
+        self.assertEqual(result, expected)
+
+    def test_issue_189_top(self):
+        sql = """SELECT TOP 10 [Column] FROM A ORDER BY [relevance]"""
+        result = parse(sql)
+        expected = {"from": "A", "orderby": {"value": "relevance"}, "select": {"value": "Column"}, "top": 10}
         self.assertEqual(result, expected)

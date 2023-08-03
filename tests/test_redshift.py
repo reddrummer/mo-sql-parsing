@@ -6,7 +6,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -161,10 +160,7 @@ class TestRedshift(TestCase):
         self.assertEqual(
             result,
             {
-                "from": [
-                    "t",
-                    {"left join": "ex", "on": {"eq": ["t.date", {"cast": ["ex.date_at", {"date": ""}]}]}},
-                ],
+                "from": ["t", {"left join": "ex", "on": {"eq": ["t.date", {"cast": ["ex.date_at", {"date": ""}]}]}},],
                 "select": "*",
             },
         )

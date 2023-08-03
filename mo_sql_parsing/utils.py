@@ -311,6 +311,13 @@ def to_trim_call(tokens):
     return Call("trim", [frum], {"characters": tokens["chars"], "direction": tokens["direction"]},)
 
 
+def to_index_part(tokens):
+    value = dict(tokens)
+    if len(value)==1:
+        return value['value']
+    return value
+
+
 def to_kwarg(tokens):
     return {k: v for k, v in [tuple(tokens)]}
 
@@ -471,8 +478,8 @@ def to_when_call(tokens):
 
 def to_match_expr(tokens):
     if "expr" in tokens:
-        return Call("and", [tokens["cond"], tokens['expr']])
-    return tokens['cond']
+        return Call("and", [tokens["cond"], tokens["expr"]])
+    return tokens["cond"]
 
 
 def to_join_call(tokens):
@@ -614,6 +621,8 @@ def to_union_call(tokens):
         return unions
     elif unions.type.parser_name == "unordered_sql":
         output = dict(unions)  # REMOVE THE Group()
+        if not output:
+            output = unions[0]
     else:
         unions = list(unions)
         sources = [unions[i] for i in range(0, len(unions), 2)]
@@ -774,7 +783,7 @@ mysql_doublequote_string = Regex(r'\"(\"\"|[^"])*\"') / double_literal
 
 # BASIC IDENTIFIERS
 ansi_ident = Regex(r'\"(\"\"|[^"])*\"') / double_column
-mysql_backtick_ident = Regex(r"\`(\`\`|[^`])*\`") / backtick_column
+mysql_backtick_ident = Regex(r"`(``|[^`])*`") / backtick_column
 sqlserver_ident = Regex(r"\[(\]\]|[^\]])*\]") / square_column
 
 copy_params = (

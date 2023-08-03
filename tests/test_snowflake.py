@@ -7,7 +7,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -94,10 +93,7 @@ class TestSnowflake(TestCase):
         """
         result = parse(sql)
         expected = {
-            "from": {
-                "name": "t",
-                "value": {"table": {"split_to_table": [{"literal": "a.b.z.d"}, {"literal": "."}]}},
-            },
+            "from": {"name": "t", "value": {"table": {"split_to_table": [{"literal": "a.b.z.d"}, {"literal": "."}]}},},
             "orderby": {"value": "t.value"},
             "select": [{"value": "t.index"}, {"value": "t.value"}],
         }

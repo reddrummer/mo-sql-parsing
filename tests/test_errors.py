@@ -7,7 +7,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from mo_parsing.debug import Debugger
 from mo_testing.fuzzytestcase import FuzzyTestCase

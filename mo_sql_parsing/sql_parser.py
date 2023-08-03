@@ -68,7 +68,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         with whitespaces.NO_WHITESPACE:
             identifier = ~RESERVED + ident
-        function_name = ~(UNION | FROM | WHERE) + ident
+        function_name = ~(UNION | FROM | WHERE | SELECT) + ident
 
         # EXPRESSIONS
         expression = Forward()
@@ -289,10 +289,11 @@ def parser(literal_string, simple_ident, sqlserver=False):
             function_name("op")
             + LB
             + Optional(flag("distinct"))
-            + Optional(Group(query)("params") | delimited_list(one_param))
+            + Optional(delimited_list(one_param) | Group(query)("params"))
             + Optional((keyword("respect") | keyword("ignore"))("nulls") + keyword("nulls").suppress())
             + Optional(ORDER_BY + delimited_list(Group(sort_column))("orderby"))
             + Optional(assign("limit", expression))
+            + Optional(assign("separator", expression))
             + RB
         ) / to_json_call
 
@@ -349,8 +350,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Literal("*")
                 | infix_notation(
                     compound,
-                    [
-                        (dynamic_accessor, 1, LEFT_ASSOC, to_offset,),
+                    ([] if sqlserver else [(dynamic_accessor, 1, LEFT_ASSOC, to_offset,)])
+                    + [
                         (simple_accessor, 1, LEFT_ASSOC, to_offset,),
                         (accessor, 1, LEFT_ASSOC, to_offset),
                         (window_clause, 1, LEFT_ASSOC, to_window_mod),
@@ -376,7 +377,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         pivot_join = (
             PIVOT("op")
             + (
-                LB + expression("aggregate") + assign("for", identifier) + (IN + expression("in")) + RB + alias
+                LB + expression("aggregate") + alias + assign("for", identifier) + (IN + expression("in")) + RB + alias
             )("kwargs")
         ) / to_pivot_call
 
@@ -427,7 +428,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         ) + comma
 
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
-        values = VALUES + delimited_list(row) / to_values
+        values = (VALUES + delimited_list(row)) / to_values
 
         window_clause = identifier("name") + AS + (identifier | over_clause)("value")
 
@@ -509,7 +510,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 + rows
                 + Optional(keyword("only"))
             )
-            & Optional(assign("limit", expression))
+            & Optional(LIMIT + ((expression("offset") + "," + expression("limit")) | expression("limit")))
         )
 
         # https://www.postgresql.org/docs/current/sql-select.html
@@ -552,7 +553,11 @@ def parser(literal_string, simple_ident, sqlserver=False):
         # MySQL's index_type := Using + ( "BTREE" | "HASH" )
         index_type = Optional(assign("using", ident("index_type")))
 
-        index_column_names = LB + delimited_list(identifier("columns")) + RB
+        index_column_names = (
+            LB
+            + delimited_list((identifier("value") + Optional(LB + int_num("length") + RB)) / to_index_part)("columns")
+            + RB
+        )
 
         column_def_delete = assign("on delete", (keyword("cascade") | keyword("set null") | keyword("set default")),)
 
@@ -571,8 +576,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Optional(flag("unique"))
                 + Optional(INDEX | KEY)
                 + Optional(identifier("name"))
-                + index_type
                 + index_column_names
+                + index_type
                 + index_options
             )("index")
             | assign("check", LB + expression + RB)
@@ -606,6 +611,11 @@ def parser(literal_string, simple_ident, sqlserver=False):
         create_view = (
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
+            + Optional(
+                keyword("algorithm").suppress()
+                + EQ
+                + (keyword("merge") | keyword("temptable") | keyword("undefined"))("algorithm")
+            )
             + temporary
             + VIEW.suppress()
             + Optional((keyword("if not exists") / False)("replace"))
@@ -717,7 +727,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                     + assign(
                         "then",
                         (
-                            keyword("delete")/ {"delete": {}}
+                            keyword("delete") / {"delete": {}}
                             | keyword("update set").suppress()
                             + Dict(delimited_list(Group(identifier + EQ + expression))) / (lambda t: {"update": t})
                             | (
@@ -735,6 +745,18 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 / to_when_call
             )("params")
         ) / to_json_call
+
+        truncate = (
+            Keyword("truncate", caseless=True).suppress()
+            + Optional(TABLE)
+            + identifier("truncate")
+            + Optional(
+                WITH
+                + LB
+                + assign("partitions", LB + delimited_list(Group((int_num + TO + int_num)("range")) | int_num) + RB)
+                + RB
+            )
+        )
 
         #############################################################
         # PROCEDURAL
@@ -879,7 +901,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         statement << (
             query
-            | (insert | update | delete | merge)
+            | (insert | update | delete | merge | truncate)
             | (create_table | create_view | create_cache | create_index)
             | (drop_table | drop_view | drop_index)
             | (copy | alter)

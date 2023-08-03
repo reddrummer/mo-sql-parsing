@@ -6,7 +6,6 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import, division, unicode_literals
 
 from unittest import TestCase
 
@@ -266,4 +265,100 @@ class TestMySql(TestCase):
             "source": {"name": "Source", "value": "SourceProducts"},
             "target": {"name": "Target", "value": "TargetProducts"},
         }
+        self.assertEqual(result, expected)
+
+    def test_issue_180_subsquery(self):
+        sql = """SELECT concat( 
+            ( SELECT value FROM schema.table a where b = c ), 
+            RIGHT( '00' + CAST(MONTH(d) AS VARCHAR(2)), 2 ) 
+        ) AS res"""
+        result = parse(sql)
+        expected = {"select": {
+            "name": "res",
+            "value": {"concat": [
+                {
+                    "from": {"name": "a", "value": "schema.table"},
+                    "select": {"value": "value"},
+                    "where": {"eq": ["b", "c"]},
+                },
+                {"right": [{"add": [{"literal": "00"}, {"cast": [{"month": "d"}, {"varchar": 2}]}]}, 2]},
+            ]},
+        }}
+        self.assertEqual(result, expected)
+
+    def test_issue_187_using_btree(self):
+        sql = """create table tt (n varchar(10), nn varchar(6), key `inx_nn` (`nn`) using btree );"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "n", "type": {"varchar": 10}}, {"name": "nn", "type": {"varchar": 6}}],
+            "constraint": {"index": {"columns": "nn", "name": "inx_nn", "using": "btree"}},
+            "name": "tt",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_issue_186_limit(self):
+        sql = """SELECT * from t1 limit 1,10"""
+        result = parse(sql)
+        expected = {"select": "*", "from": "t1", "offset": 1, "limit": 10}
+        self.assertEqual(result, expected)
+
+    def test_issue_185_group_concat(self):
+        sql = """SELECT substring_index(group_concat(manager.id order by manager.create DESC separator ','), ',', 1) AS s_id FROM a"""
+        result = parse(sql)
+        expected = {
+            "from": "a",
+            "select": {
+                "name": "s_id",
+                "value": {"substring_index": [
+                    {
+                        "group_concat": "manager.id",
+                        "orderby": {"sort": "desc", "value": "manager.create"},
+                        "separator": {"literal": ","},
+                    },
+                    {"literal": ","},
+                    1,
+                ]},
+            },
+        }
+        self.assertEqual(result, expected)
+
+    def test_issue_185_on_update(self):
+        sql = """create table a (lastcreated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"""
+        result = parse(sql)
+        expected = {"create table": {
+            "name": "a",
+            "columns": {
+                "default": "CURRENT_TIMESTAMP",
+                "name": "lastcreated",
+                "on_update": "CURRENT_TIMESTAMP",
+                "type": {"datetime": {}},
+            },
+        }}
+        self.assertEqual(result, expected)
+
+    def test_issue_185_algorithm(self):
+        # CREATE [OR REPLACE][ALGORITHM = {MERGE | TEMPTABLE | UNDEFINED}] VIEW
+        sql = """CREATE OR REPLACE ALGORITHM = UNDEFINED VIEW view_name AS SELECT *"""
+        result = parse(sql)
+        expected = {"create view": {
+            "algorithm": "undefined",
+            "name": "view_name",
+            "query": {"select": "*"},
+            "replace": True,
+        }}
+
+        self.assertEqual(result, expected)
+
+    def test_issue_185_index_length(self):
+        sql = """CREATE TABLE IF NOT EXISTS industry_i18n (id bigint(20) NOT NULL AUTO_INCREMENT, KEY locale_id (master_id,locale(255)));"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": {"auto_increment": True, "name": "id", "nullable": False, "type": {"bigint": 20}},
+            "constraint": {"index": {
+                "name": "locale_id",
+                "columns": ["master_id", {"value": "locale", "length": 255}],
+            }},
+            "name": "industry_i18n",
+            "replace": False,
+        }}
         self.assertEqual(result, expected)

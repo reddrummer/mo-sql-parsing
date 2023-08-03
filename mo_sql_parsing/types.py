@@ -230,6 +230,7 @@ def get_column_type(expr, identifier, literal_string):
         | column_def_references
         | assign("check", LB + expr + RB)
         | assign("default", expr)
+        | assign("on update", expr)
     )
 
     column_definition << Group(identifier("name") + (column_type | identifier("type")) + ZeroOrMore(column_options))
