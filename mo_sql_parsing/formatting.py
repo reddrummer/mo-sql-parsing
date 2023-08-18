@@ -315,6 +315,9 @@ class Formatter:
     def _regexp(self, value, prec):
         return f"{self.dispatch(value[0])} REGEXP {self.dispatch(value[1])}"
 
+    def _not_regexp(self, value, prec):
+        return f"{self.dispatch(value[0])} NOT REGEXP {self.dispatch(value[1])}"
+
     def _binary_not(self, value, prec):
         return "~{0}".format(self.dispatch(value))
 
