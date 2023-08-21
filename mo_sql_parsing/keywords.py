@@ -166,6 +166,7 @@ NOT_ILIKE = Group(NOT + ILIKE).set_parser_name("not_ilike")
 NOT_LIKE = Group(NOT + LIKE).set_parser_name("not_like")
 NOT_RLIKE = Group(NOT + RLIKE).set_parser_name("not_rlike")
 NOT_IN = Group(NOT + IN).set_parser_name("nin")
+NOT_REGEXP = Group(NOT + REGEXP).set_parser_name("not_regexp")
 IS_NOT = Group(IS + NOT).set_parser_name("is_not")
 
 _SIMILAR = keyword("similar")
@@ -289,6 +290,7 @@ precedence = {
     "gt": 6,
     "eq": 7,
     "rgx": 7,
+    "not_rgx": 7,
     "neq": 7,
     "missing": 7,
     "exists": 7,
@@ -356,6 +358,7 @@ KNOWN_OPS = [
     OR,
     LAMBDA,
     REGEXP,
+    NOT_REGEXP,
 ]
 
 times = ["now", "today", "tomorrow", "eod"]

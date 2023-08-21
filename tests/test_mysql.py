@@ -363,8 +363,14 @@ class TestMySql(TestCase):
         }}
         self.assertEqual(result, expected)
 
-    def test_issue_185_index_length(self):
+    def test_regexp(self):
         sql = """SELECT * FROM dbo.table where col  REGEXP '[^0-9A-Za-z]'"""
         result = parse(sql)
         expected = {'select': '*', 'from': 'dbo.table', 'where': {'regexp': ['col', {'literal': '[^0-9A-Za-z]'}]}}
+        self.assertEqual(result, expected)
+
+    def test_not_regexp(self):
+        sql = """SELECT * FROM dbo.table where col NOT REGEXP '[^0-9A-Za-z]'"""
+        result = parse(sql)
+        expected = {'select': '*', 'from': 'dbo.table', 'where': {'not_regexp': ['col', {'literal': '[^0-9A-Za-z]'}]}}
         self.assertEqual(result, expected)
