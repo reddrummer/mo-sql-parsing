@@ -296,6 +296,26 @@ class TestMySql(TestCase):
         }}
         self.assertEqual(result, expected)
 
+    def test_using_btree_in_primary_key_1(self):
+        sql = """create table tt (n varchar(10), nn varchar(6), primary key (`nn`) using btree );"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "n", "type": {"varchar": 10}}, {"name": "nn", "type": {"varchar": 6}}],
+            "constraint": {"primary_key": {"columns": "nn", "using": "btree"}},
+            "name": "tt",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_using_btree_in_primary_key_2(self):
+        sql = """create table tt (n varchar(10), nn varchar(6), primary key using btree (`nn`) );"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "n", "type": {"varchar": 10}}, {"name": "nn", "type": {"varchar": 6}}],
+            "constraint": {"primary_key": {"columns": "nn", "using": "btree"}},
+            "name": "tt",
+        }}
+        self.assertEqual(result, expected)
+
     def test_issue_186_limit(self):
         sql = """SELECT * from t1 limit 1,10"""
         result = parse(sql)
