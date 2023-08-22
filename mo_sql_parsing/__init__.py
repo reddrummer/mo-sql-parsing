@@ -28,6 +28,7 @@ def parse(sql, null=SQL_NULL, calls=simple_op):
     """
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
+    :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
     :return: parse tree
     """
     global common_parser

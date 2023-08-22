@@ -501,16 +501,15 @@ def parser(literal_string, simple_ident, sqlserver=False):
         ) / to_table
 
         rows = Optional(keyword("row") | keyword("rows"))
-        limit = (
-            Optional(assign("offset", expression) + rows)
-            & Optional(
-                FETCH
-                + Optional(keyword("first") | keyword("next"))
-                + expression("fetch")
-                + rows
-                + Optional(keyword("only"))
-            )
-            & Optional(LIMIT + ((expression("offset") + "," + expression("limit")) | expression("limit")))
+        limit = ZeroOrMore(
+            assign("offset", expression) + rows
+            | FETCH
+            + Optional(keyword("first") | keyword("next"))
+            + expression("fetch")
+            + rows
+            + Optional(keyword("only"))
+            | LIMIT + expression("offset") + "," + expression("limit")
+            | LIMIT + expression("limit")
         )
 
         # https://www.postgresql.org/docs/current/sql-select.html
@@ -571,7 +570,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         index_options = ZeroOrMore(identifier / (lambda t: {t[0]: True}))
 
         table_constraint_definition = Optional(CONSTRAINT + identifier("name")) + (
-            assign("primary key", index_type + index_column_names + index_options)
+            assign("primary key", index_type + index_column_names + index_type + index_options)
             | (
                 Optional(flag("unique"))
                 + Optional(INDEX | KEY)
@@ -687,11 +686,30 @@ def parser(literal_string, simple_ident, sqlserver=False):
             + returning
         ) / to_update_call
 
+        delete_options = ["low_priority", "quick", "ignore"]
+
         delete = (
             keyword("delete")("op")
-            + keyword("from").suppress()
-            + identifier("params")
+            + (
+                # DELETE <options> FROM x USING y
+                ZeroOrMore(flag("low_priority") | flag("quick") | flag("ignore"))
+                + FROM
+                + delimited_list(~MatchFirst([keyword(o) for o in delete_options]) + identifier)("params")
+                + USING
+                + (delimited_list(table_source) + ZeroOrMore(join))("from")
+                # DELETE <options> y FROM x
+                | delimited_list(~MatchFirst([keyword(o) for o in delete_options]) + identifier)("params")
+                + ZeroOrMore(flag("low_priority") | flag("quick") | flag("ignore"))
+                + FROM
+                + (delimited_list(table_source) + ZeroOrMore(join))("from")
+                # DELETE <options> FROM x
+                | ZeroOrMore(flag("low_priority") | flag("quick") | flag("ignore"))
+                + FROM
+                + (delimited_list(table_source) + ZeroOrMore(join))("params")
+            )
             + Optional(assign("where", expression))
+            + Optional(ORDER_BY + delimited_list(Group(sort_column))("orderby"))
+            + limit
             + returning
         ) / to_json_call
 

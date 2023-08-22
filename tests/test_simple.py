@@ -9,6 +9,8 @@
 
 from unittest import TestCase
 
+from mo_parsing.debug import Debugger
+
 from mo_sql_parsing import parse, parse_mysql, format
 
 try:

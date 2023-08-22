@@ -11,7 +11,7 @@ from unittest import TestCase
 
 from mo_parsing.debug import Debugger
 
-from mo_sql_parsing import parse, parse_mysql
+from mo_sql_parsing import parse, parse_mysql, normal_op, format
 
 
 class TestMySql(TestCase):
@@ -296,6 +296,26 @@ class TestMySql(TestCase):
         }}
         self.assertEqual(result, expected)
 
+    def test_using_btree_in_primary_key_1(self):
+        sql = """create table tt (n varchar(10), nn varchar(6), primary key (`nn`) using btree );"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "n", "type": {"varchar": 10}}, {"name": "nn", "type": {"varchar": 6}}],
+            "constraint": {"primary_key": {"columns": "nn", "using": "btree"}},
+            "name": "tt",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_using_btree_in_primary_key_2(self):
+        sql = """create table tt (n varchar(10), nn varchar(6), primary key using btree (`nn`) );"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "n", "type": {"varchar": 10}}, {"name": "nn", "type": {"varchar": 6}}],
+            "constraint": {"primary_key": {"columns": "nn", "using": "btree"}},
+            "name": "tt",
+        }}
+        self.assertEqual(result, expected)
+
     def test_issue_186_limit(self):
         sql = """SELECT * from t1 limit 1,10"""
         result = parse(sql)
@@ -363,8 +383,81 @@ class TestMySql(TestCase):
         }}
         self.assertEqual(result, expected)
 
-    def test_issue_185_index_length(self):
+    def test_regexp(self):
         sql = """SELECT * FROM dbo.table where col  REGEXP '[^0-9A-Za-z]'"""
         result = parse(sql)
-        expected = {'select': '*', 'from': 'dbo.table', 'where': {'regexp': ['col', {'literal': '[^0-9A-Za-z]'}]}}
+        expected = {"select": "*", "from": "dbo.table", "where": {"regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
+        self.assertEqual(result, expected)
+
+    def test_not_regexp(self):
+        sql = """SELECT * FROM dbo.table where col NOT REGEXP '[^0-9A-Za-z]'"""
+        result = parse(sql)
+        expected = {"select": "*", "from": "dbo.table", "where": {"not_regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete1(self):
+        sql = "DELETE FROM a LIMIT 1"
+        result = parse(sql)
+        expected = {"delete": "a", "limit": 1}
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete2(self):
+        sql = "DELETE FROM a ORDER BY a.f DESC"
+        result = parse(sql)
+        expected = {"delete": "a", "orderby": {"sort": "desc", "value": "a.f"}}
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete3(self):
+        sql = "DELETE LOW_PRIORITY FROM a"
+        result = parse(sql)
+        expected = {"delete": "a", "low_priority": True}
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete4(self):
+        sql = "DELETE QUICK FROM a"
+        result = parse(sql)
+        expected = {"delete": "a", "quick": True}
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete5(self):
+        sql = "DELETE IGNORE FROM a"
+        result = parse(sql)
+        expected = {"delete": "a", "ignore": True}
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete6(self):
+        sql = "DELETE LOW_PRIORITY FROM a"
+        result = parse(sql)
+        expected = {"delete": "a", "low_priority": True}
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete7(self):
+        sql = "DELETE t1 FROM table1 t1 WHERE t1.a IN (SELECT t2.a FROM table2 t2)"
+        result = parse(sql)
+        expected = {
+            "delete": "t1",
+            "from": {"name": "t1", "value": "table1"},
+            "where": {"in": ["t1.a", {"from": {"name": "t2", "value": "table2"}, "select": {"value": "t2.a"}}]},
+        }
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete8(self):
+        sql = "DELETE a1, a2 FROM t1 AS a1 INNER JOIN t2 AS a2 WHERE a1.id=a2.id"
+        result = parse(sql)
+        expected = {
+            "delete": ["a1", "a2"],
+            "from": [{"name": "a1", "value": "t1"}, {"inner join": {"name": "a2", "value": "t2"}}],
+            "where": {"eq": ["a1.id", "a2.id"]},
+        }
+
+        self.assertEqual(result, expected)
+
+    def test_issue_192_delete9(self):
+        sql = "DELETE FROM a1, a2 USING t1 AS a1 INNER JOIN t2 AS a2 WHERE a1.id=a2.id"
+        result = parse(sql)
+        expected = {
+            "delete": ["a1", "a2"],
+            "from": [{"name": "a1", "value": "t1"}, {"inner join": {"name": "a2", "value": "t2"}}],
+            "where": {"eq": ["a1.id", "a2.id"]},
+        }
         self.assertEqual(result, expected)

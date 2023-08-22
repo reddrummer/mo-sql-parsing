@@ -174,6 +174,8 @@ class Formatter:
                 return self.delete(json, prec)
             elif "substring" in json:
                 return self._substring(json, prec)
+            elif "group_concat" in json:
+                return self._group_concat(json, prec)
             elif "value" in json:
                 return self.value(json, prec)
             elif "join" in json:
@@ -315,6 +317,9 @@ class Formatter:
     def _regexp(self, value, prec):
         return f"{self.dispatch(value[0])} REGEXP {self.dispatch(value[1])}"
 
+    def _not_regexp(self, value, prec):
+        return f"{self.dispatch(value[0])} NOT REGEXP {self.dispatch(value[1])}"
+
     def _binary_not(self, value, prec):
         return "~{0}".format(self.dispatch(value))
 
@@ -344,6 +349,16 @@ class Formatter:
             # if substring does not contain from and for,  compose normal substring function
             params = ", ".join(self.dispatch(p) for p in json["substring"])
             return f"SUBSTRING({params})"
+
+    def _group_concat(self, json, prec):
+        acc = ["group_concat(", self.dispatch(json['group_concat']), " "]
+        if "orderby" in json.keys():
+            acc.append(self.orderby(json, precedence["order"]))
+        if "separator" in json.keys():
+            acc.append(" SEPARATOR ")
+            acc.append(self.dispatch(json['separator']))
+        acc.append(")")
+        return "".join(acc)
 
     def _in(self, json, prec):
         member, set = json
