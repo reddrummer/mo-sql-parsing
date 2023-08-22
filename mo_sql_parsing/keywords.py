@@ -145,9 +145,10 @@ VIEW = keyword("view")
 
 joins = (
     (
-        Optional(CROSS | OUTER | INNER | NATURAL | ((FULL | LEFT | RIGHT) + Optional(INNER | OUTER)))
-        + JOIN
-        | STRAIGHT_JOIN
+        (Optional(CROSS | OUTER | INNER | NATURAL | ((FULL | LEFT | RIGHT) + Optional(INNER | OUTER)))
+            + JOIN
+            | STRAIGHT_JOIN
+         )
         + Optional(LATERAL)
     )
     | LATERAL + Optional(VIEW + Optional(OUTER))
