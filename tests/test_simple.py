@@ -9,6 +9,8 @@
 
 from unittest import TestCase
 
+from mo_parsing.debug import Debugger
+
 from mo_sql_parsing import parse, parse_mysql, format
 
 try:
@@ -899,6 +901,7 @@ class TestSimple(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_141(self):
+      with Debugger():
         sql = "select name from table order by age offset 3 limit 1"
         result = parse(sql)
         expected = {
