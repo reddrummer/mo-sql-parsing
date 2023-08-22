@@ -396,11 +396,10 @@ class TestMySql(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_192_delete1(self):
-        with Debugger():
-            sql = "DELETE FROM a LIMIT 1"
-            result = parse(sql)
-            expected = {"delete": "a", "limit": 1}
-            self.assertEqual(result, expected)
+        sql = "DELETE FROM a LIMIT 1"
+        result = parse(sql)
+        expected = {"delete": "a", "limit": 1}
+        self.assertEqual(result, expected)
 
     def test_issue_192_delete2(self):
         sql = "DELETE FROM a ORDER BY a.f DESC"

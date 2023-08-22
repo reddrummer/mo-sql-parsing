@@ -901,7 +901,6 @@ class TestSimple(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_141(self):
-      with Debugger():
         sql = "select name from table order by age offset 3 limit 1"
         result = parse(sql)
         expected = {
