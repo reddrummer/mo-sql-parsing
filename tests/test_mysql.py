@@ -473,14 +473,14 @@ class TestMySql(TestCase):
         """
         result = parse(sql)
         expected = {
-            'create table': {
-                'columns': [
-                    {'name': 'name', 'type': {'varchar': 64}},
-                    {'name': 'update_time', 'on_update': {'current_timestamp': 3}, 'type': {'timestamp': 3}},
-                    {'default': {'current_timestamp': 3}, 'name': 'create_time', 'nullable': False,
-                     'type': {'timestamp': 3}}
+            "create table": {
+                "columns": [
+                    {"name": "name", "type": {"varchar": 64}},
+                    {"name": "update_time", "on_update": {"current_timestamp": 3}, "type": {"timestamp": 3}},
+                    {"default": {"current_timestamp": 3}, "name": "create_time", "nullable": False,
+                     "type": {"timestamp": 3}}
                 ],
-                'name': 'student'}}
+                "name": "student"}}
         self.assertEqual(result, expected)
 
     def test_create_table_2(self):
@@ -492,11 +492,42 @@ class TestMySql(TestCase):
         """
         result = parse(sql)
         expected = {
-            'create table': {
-                'columns': [
-                    {'character_set': 'utf8mb4', 'collate': 'utf8mb4_bin', 'comment': {'literal': 'name'},
-                     'name': 'name', 'type': {'varchar': 32}},
-                    {'character_set': 'utf8', 'collate': 'utf8_bin', 'comment': {'literal': 'class'},
-                     'name': 'class', 'type': {'varchar': 32}}],
-                'name': 'student'}}
+            "create table": {
+                "columns": [
+                    {"character_set": "utf8mb4", "collate": "utf8mb4_bin", "comment": {"literal": "name"},
+                     "name": "name", "type": {"varchar": 32}},
+                    {"character_set": "utf8", "collate": "utf8_bin", "comment": {"literal": "class"},
+                     "name": "class", "type": {"varchar": 32}}],
+                "name": "student"}}
+        self.assertEqual(result, expected)
+
+    def test_create_table_3(self):
+        sql = """CREATE TABLE t2 (c1 INT) ROW_FORMAT=DEFAULT;"""
+        result = parse(sql)
+        expected = {
+            "create table": {
+                "columns": {"name": "c1", "type": {"int": {}}}, "name": "t2", "row_format": "DEFAULT"
+            }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_4(self):
+        sql = """CREATE TABLE t1 (a1 INT, KEY `idn_a1` (`a1`) USING BTREE COMMENT 't1 a1');"""
+        result = parse(sql)
+        expected = {
+            "create table": {
+                "columns": {"name": "a1", "type": {"int": {}}},
+                "constraint": {"index": {
+                    "columns": "a1", "comment": {"literal": "t1 a1"}, "name": "idn_a1", "using": "BTREE"
+                }},
+                "name": "t1"}}
+        self.assertEqual(result, expected)
+
+    def test_create_table_5(self):
+        sql = """CREATE TABLE t1 (a1 INT, PRIMARY KEY (`a1`) USING BTREE COMMENT 't');"""
+        result = parse(sql)
+        expected = {
+            "create table": {
+                "columns": {"name": "a1", "type": {"int": {}}},
+                "constraint": {"primary_key": {"columns": "a1", "comment": {"literal": "t"}, "using": "BTREE"}},
+                "name": "t1"}}
         self.assertEqual(result, expected)
