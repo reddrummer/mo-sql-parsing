@@ -354,7 +354,7 @@ class Formatter:
         acc = ["group_concat(", json['group_concat']]
         if "orderby" in json.keys():
             acc.append(" order by ")
-            acc.append(self.dispatch(json['order_by']))
+            acc.append(self.dispatch(json['orderby']))
         if "separator" in json.keys():
             acc.append(" separator ")
             acc.append(self.dispatch(json['separator']))
