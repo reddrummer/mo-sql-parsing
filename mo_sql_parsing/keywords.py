@@ -58,6 +58,7 @@ RLIKE = keyword("rlike")
 SAMPLE = keyword("sample").suppress()
 SELECT = keyword("select").suppress()
 SET = keyword("set").suppress()
+STRAIGHT_JOIN = keyword("straight_join")
 TABLE = keyword("table").suppress()
 TABLESAMPLE = keyword("tablesample").suppress()
 THEN = keyword("then").suppress()
@@ -146,6 +147,7 @@ joins = (
     (
         Optional(CROSS | OUTER | INNER | NATURAL | ((FULL | LEFT | RIGHT) + Optional(INNER | OUTER)))
         + JOIN
+        | STRAIGHT_JOIN
         + Optional(LATERAL)
     )
     | LATERAL + Optional(VIEW + Optional(OUTER))
@@ -230,6 +232,7 @@ RESERVED = MatchFirst([
     RLIKE,
     SELECT,
     SET,
+    STRAIGHT_JOIN,
     TABLESAMPLE,
     THEN,
     TRUE,
