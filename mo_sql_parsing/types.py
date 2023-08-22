@@ -38,6 +38,7 @@ from mo_sql_parsing.keywords import (
     LT,
     GT,
     AS,
+    SET,
 )
 from mo_sql_parsing.utils import (
     keyword,
@@ -115,7 +116,7 @@ TIMETZ = keyword("timetz")
 time_functions = DATE | DATETIME | TIME | TIMESTAMP | TIMESTAMPTZ | TIMETZ
 
 # KNOWNN TIME TYPES
-_format = Optional((ansi_string | ansi_ident)("params"))
+_format = Optional((ansi_string | ansi_ident)("params") | _size)
 
 DATE_TYPE = (DATE("op") + _format) / to_json_call
 DATETIME_TYPE = (DATETIME("op") + _format) / to_json_call
@@ -224,6 +225,7 @@ def get_column_type(expr, identifier, literal_string):
         | flag("unique")
         | flag("auto_increment")
         | assign("comment", literal_string)
+        | assign("character set", identifier)
         | assign("collate", Optional(EQ) + identifier)
         | flag("primary key")
         | column_def_identity("identity")

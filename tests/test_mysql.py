@@ -462,3 +462,41 @@ class TestMySql(TestCase):
             "where": {"eq": ["a1.id", "a2.id"]},
         }
         self.assertEqual(result, expected)
+
+    def test_create_table_1(self):
+        sql = """
+            create table student (
+                `name` varchar(64), 
+                `update_time` TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+                `create_time` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+            );
+        """
+        result = parse(sql)
+        expected = {
+            'create table': {
+                'columns': [
+                    {'name': 'name', 'type': {'varchar': 64}},
+                    {'name': 'update_time', 'on_update': {'current_timestamp': 3}, 'type': {'timestamp': 3}},
+                    {'default': {'current_timestamp': 3}, 'name': 'create_time', 'nullable': False,
+                     'type': {'timestamp': 3}}
+                ],
+                'name': 'student'}}
+        self.assertEqual(result, expected)
+
+    def test_create_table_2(self):
+        sql = """
+            create table student (
+                `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'name',
+                `class` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'class',
+            );
+        """
+        result = parse(sql)
+        expected = {
+            'create table': {
+                'columns': [
+                    {'character_set': 'utf8mb4', 'collate': 'utf8mb4_bin', 'comment': {'literal': 'name'},
+                     'name': 'name', 'type': {'varchar': 32}},
+                    {'character_set': 'utf8', 'collate': 'utf8_bin', 'comment': {'literal': 'class'},
+                     'name': 'class', 'type': {'varchar': 32}}],
+                'name': 'student'}}
+        self.assertEqual(result, expected)
