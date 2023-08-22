@@ -174,6 +174,8 @@ class Formatter:
                 return self.delete(json, prec)
             elif "substring" in json:
                 return self._substring(json, prec)
+            elif "group_concat" in json:
+                return self._group_concat(json, prec)
             elif "value" in json:
                 return self.value(json, prec)
             elif "join" in json:
@@ -347,6 +349,17 @@ class Formatter:
             # if substring does not contain from and for,  compose normal substring function
             params = ", ".join(self.dispatch(p) for p in json["substring"])
             return f"SUBSTRING({params})"
+
+    def _group_concat(self, json, prec):
+        acc = ["group_concat(", json['group_concat']]
+        if "orderby" in json.keys():
+            acc.append(" order by ")
+            acc.append(self.dispatch(json['order_by']))
+        if "separator" in json.keys():
+            acc.append(" separator ")
+            acc.append(self.dispatch(json['separator']))
+        acc.append(")")
+        return "".join(acc)
 
     def _in(self, json, prec):
         member, set = json

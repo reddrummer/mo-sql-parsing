@@ -11,7 +11,7 @@ from unittest import TestCase
 
 from mo_parsing.debug import Debugger
 
-from mo_sql_parsing import parse, parse_mysql
+from mo_sql_parsing import parse, parse_mysql, normal_op, format
 
 
 class TestMySql(TestCase):
@@ -396,11 +396,11 @@ class TestMySql(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_192_delete1(self):
-      with Debugger():
-        sql = "DELETE FROM a LIMIT 1"
-        result = parse(sql)
-        expected = {"delete": "a", "limit": 1}
-        self.assertEqual(result, expected)
+        with Debugger():
+            sql = "DELETE FROM a LIMIT 1"
+            result = parse(sql)
+            expected = {"delete": "a", "limit": 1}
+            self.assertEqual(result, expected)
 
     def test_issue_192_delete2(self):
         sql = "DELETE FROM a ORDER BY a.f DESC"
@@ -409,10 +409,10 @@ class TestMySql(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_192_delete3(self):
-            sql = "DELETE LOW_PRIORITY FROM a"
-            result = parse(sql)
-            expected = {"delete": "a", "low_priority": True}
-            self.assertEqual(result, expected)
+        sql = "DELETE LOW_PRIORITY FROM a"
+        result = parse(sql)
+        expected = {"delete": "a", "low_priority": True}
+        self.assertEqual(result, expected)
 
     def test_issue_192_delete4(self):
         sql = "DELETE QUICK FROM a"
@@ -447,11 +447,8 @@ class TestMySql(TestCase):
         result = parse(sql)
         expected = {
             "delete": ["a1", "a2"],
-            "from": [
-                {"name": "a1", "value": "t1"},
-                {"inner join": {"name": "a2", "value": "t2"}}
-            ],
-            "where": {"eq": ["a1.id", "a2.id"]}
+            "from": [{"name": "a1", "value": "t1"}, {"inner join": {"name": "a2", "value": "t2"}}],
+            "where": {"eq": ["a1.id", "a2.id"]},
         }
 
         self.assertEqual(result, expected)
@@ -459,11 +456,60 @@ class TestMySql(TestCase):
     def test_issue_192_delete9(self):
         sql = "DELETE FROM a1, a2 USING t1 AS a1 INNER JOIN t2 AS a2 WHERE a1.id=a2.id"
         result = parse(sql)
-        expected = {"delete": ["a1", "a2"],
-            "from": [
-                {"name": "a1", "value": "t1"},
-                {"inner join": {"name": "a2", "value": "t2"}}
-            ],
-            "where": {"eq": ["a1.id", "a2.id"]}
+        expected = {
+            "delete": ["a1", "a2"],
+            "from": [{"name": "a1", "value": "t1"}, {"inner join": {"name": "a2", "value": "t2"}}],
+            "where": {"eq": ["a1.id", "a2.id"]},
         }
         self.assertEqual(result, expected)
+
+
+sql = """CREATE OR REPLACE
+VIEW data_view AS
+select
+u.id AS client_id,
+substring_index(group_concat(u.co_id order by u.created DESC separator ','), ',', 1) AS s_id
+from
+user u
+where
+(u.event_status in (1, 3))"""
+
+temp = {"create view": {
+    "replace": True,
+    "name": "data_view",
+    "query": {
+        "select": [
+            {"value": "u.id", "name": "client_id"},
+            {
+                "value": {
+                    "op": "substring_index",
+                    "args": [
+                        {
+                            "op": "group_concat",
+                            "args": ["u.co_id"],
+                            "kwargs": {
+                                "orderby": {"value": "u.created", "sort": "desc"},
+                                "separator": {"literal": ","},
+                            },
+                        },
+                        {"literal": ","},
+                        1,
+                    ],
+                },
+                "name": "s_id",
+            },
+        ],
+        "from": {"value": "user", "name": "u"},
+        "where": {"op": "in", "args": ["u.event_status", [1, 3]]},
+    },
+}}
+
+
+result = parse(sql)
+
+selects = result["create view"]["query"]["select"]
+for select in selects:
+    if "value" in select:
+        select["value"] = format(select["value"])
+
+print(result)
