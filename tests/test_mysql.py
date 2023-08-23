@@ -541,3 +541,13 @@ class TestMySql(TestCase):
                             "type": {"int": 3, "unsigned": True, "zerofill": True}},
                 "name": "t1"}}
         self.assertEqual(result, expected)
+
+    def test_create_table_7(self):
+        sql = """CREATE TABLE t1 (a1 double(10,4) DEFAULT NULL);"""
+        result = parse(sql)
+        expected = {
+            "create table": {
+                "columns": {"name": "a1", "default": {"null": {}},
+                            "type": {"double": [10, 4]}},
+                "name": "t1"}}
+        self.assertEqual(result, expected)
