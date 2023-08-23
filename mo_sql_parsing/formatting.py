@@ -351,12 +351,12 @@ class Formatter:
             return f"SUBSTRING({params})"
 
     def _group_concat(self, json, prec):
-        acc = ["group_concat(", self.dispatch(json['group_concat']), " "]
+        acc = ["group_concat(", self.dispatch(json["group_concat"]), " "]
         if "orderby" in json.keys():
             acc.append(self.orderby(json, precedence["order"]))
         if "separator" in json.keys():
             acc.append(" SEPARATOR ")
-            acc.append(self.dispatch(json['separator']))
+            acc.append(self.dispatch(json["separator"]))
         acc.append(")")
         return "".join(acc)
 

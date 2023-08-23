@@ -52,26 +52,30 @@ from mo_sql_parsing.utils import (
 _size = Optional(LB + int_num("params") + RB)
 _sizes = Optional(LB + delimited_list(int_num("params")) + RB)
 
+_type_attrs = Optional(flag("unsigned")) + Optional(flag("zerofill"))
+
 simple_types = Forward()
 
-BIGINT = Group(keyword("bigint")("op") + Optional(_size) + Optional(flag("unsigned"))) / to_json_call
+BIGINT = Group(keyword("bigint")("op") + Optional(_size) + _type_attrs) / to_json_call
+BIT = (keyword("bit")("op") + _size) / to_json_call
 BOOL = Group(keyword("bool")("op")) / to_json_call
 BOOLEAN = Group(keyword("boolean")("op")) / to_json_call
-DOUBLE = Group(keyword("double")("op") + Optional(flag("unsigned"))) / to_json_call
+DOUBLE = Group(keyword("double")("op") + Optional(_sizes) + _type_attrs) / to_json_call
 FLOAT64 = Group(keyword("float64")("op")) / to_json_call
 BIGNUMERIC = Group(keyword("bignumeric")("op")) / to_json_call
 BIGDECIMAL = Group(keyword("bigdecimal")("op")) / to_json_call
-FLOAT = Group(keyword("float")("op") + Optional(flag("unsigned"))) / to_json_call
+FLOAT = Group(keyword("float")("op") + Optional(_sizes) + _type_attrs) / to_json_call
 GEOMETRY = Group(keyword("geometry")("op")) / to_json_call
-INTEGER = Group(keyword("integer")("op") + Optional(flag("unsigned"))) / to_json_call
+INTEGER = Group(keyword("integer")("op") + _size + _type_attrs) / to_json_call
 INTERVAL = Group(keyword("interval")("op")) / to_json_call
-INT = (keyword("int")("op") + _size + Optional(flag("unsigned"))) / to_json_call
+INT = (keyword("int")("op") + _size + _type_attrs) / to_json_call
 INT32 = Group(keyword("int32")("op")) / to_json_call
 INT64 = Group(keyword("int64")("op")) / to_json_call
 BYTEINT = Group(keyword("byteint")("op")) / to_json_call
 REAL = Group(keyword("real")("op") + Optional(flag("unsigned"))) / to_json_call
 TEXT = Group(keyword("text")("op")) / to_json_call
-SMALLINT = Group(keyword("smallint")("op") + Optional(flag("unsigned"))) / to_json_call
+MEDIUMINT = Group(keyword("mediumint")("op") + _size + _type_attrs) / to_json_call
+SMALLINT = Group(keyword("smallint")("op") + _size + _type_attrs) / to_json_call
 STRING = Group(keyword("string")("op")) / to_json_call
 VARYING = Group(keyword("varying")("op")) / to_json_call
 
@@ -90,11 +94,10 @@ NCHAR = (keyword("nchar")("op") + _size) / to_json_call
 VARCHAR = (keyword("varchar")("op") + _size) / to_json_call
 VARCHAR2 = (keyword("varchar2")("op") + _size) / to_json_call
 VARBINARY = (keyword("varbinary")("op") + _size) / to_json_call
-TINYINT = (keyword("tinyint")("op") + _size + Optional(flag("unsigned"))) / to_json_call
+TINYINT = (keyword("tinyint")("op") + _size + _type_attrs) / to_json_call
 UUID = Group(keyword("uuid")("op")) / to_json_call
 
-
-DECIMAL = (keyword("decimal")("op") + _sizes) / to_json_call
+DECIMAL = (keyword("decimal")("op") + _sizes + _type_attrs) / to_json_call
 DOUBLE_PRECISION = Group((keyword("double precision") / "double_precision")("op")) / to_json_call
 NUMERIC = (keyword("numeric")("op") + _sizes) / to_json_call
 NUMBER = (keyword("number")("op") + _sizes) / to_json_call
@@ -115,7 +118,7 @@ TIMETZ = keyword("timetz")
 time_functions = DATE | DATETIME | TIME | TIMESTAMP | TIMESTAMPTZ | TIMETZ
 
 # KNOWNN TIME TYPES
-_format = Optional((ansi_string | ansi_ident)("params"))
+_format = Optional((ansi_string | ansi_ident)("params") | _size)
 
 DATE_TYPE = (DATE("op") + _format) / to_json_call
 DATETIME_TYPE = (DATETIME("op") + _format) / to_json_call
@@ -129,6 +132,7 @@ TIMETZ_TYPE = (TIMETZ("op") + _format) / to_json_call
 simple_types << MatchFirst([
     ARRAY_TYPE,
     BIGINT,
+    BIT,
     BOOL,
     BOOLEAN,
     BLOB,
@@ -158,6 +162,7 @@ simple_types << MatchFirst([
     NUMERIC,
     REAL,
     TEXT,
+    MEDIUMINT,
     SMALLINT,
     STRING,
     TIME_TYPE,
@@ -224,6 +229,7 @@ def get_column_type(expr, identifier, literal_string):
         | flag("unique")
         | flag("auto_increment")
         | assign("comment", literal_string)
+        | assign("character set", identifier)
         | assign("collate", Optional(EQ) + identifier)
         | flag("primary key")
         | column_def_identity("identity")

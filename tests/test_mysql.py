@@ -461,3 +461,313 @@ class TestMySql(TestCase):
             "where": {"eq": ["a1.id", "a2.id"]},
         }
         self.assertEqual(result, expected)
+
+    def test_create_table_1(self):
+        sql = """
+            create table student (
+                `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'name',
+                `class` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'class',
+            );
+        """
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {
+                    "character_set": "utf8mb4",
+                    "collate": "utf8mb4_bin",
+                    "comment": {"literal": "name"},
+                    "name": "name",
+                    "type": {"varchar": 32},
+                },
+                {
+                    "character_set": "utf8",
+                    "collate": "utf8_bin",
+                    "comment": {"literal": "class"},
+                    "name": "class",
+                    "type": {"varchar": 32},
+                },
+            ],
+            "name": "student",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_2(self):
+        sql = """CREATE TABLE t2 (c1 INT) ROW_FORMAT=DEFAULT;"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": {"name": "c1", "type": {"int": {}}},
+            "name": "t2",
+            "row_format": "DEFAULT",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_3(self):
+        sql = """CREATE TABLE t1 (a1 INT, KEY `idn_a1` (`a1`) USING BTREE COMMENT 't1 a1');"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": {"name": "a1", "type": {"int": {}}},
+            "constraint": {"index": {
+                "columns": "a1",
+                "comment": {"literal": "t1 a1"},
+                "name": "idn_a1",
+                "using": "BTREE",
+            }},
+            "name": "t1",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_4(self):
+        sql = """CREATE TABLE t1 (a1 INT, PRIMARY KEY (`a1`) USING BTREE COMMENT 't');"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": {"name": "a1", "type": {"int": {}}},
+            "constraint": {"primary_key": {"columns": "a1", "comment": {"literal": "t"}, "using": "BTREE"}},
+            "name": "t1",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_5(self):
+        """CHECKSUM [=] {0 | 1}
+        refer: https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+        """
+        sql = """CREATE TABLE t1 (a1 varchar(8)) CHECKSUM=1;"""
+        result = parse(sql)
+        expected = {"create table": {"checksum": 1, "columns": {"name": "a1", "type": {"varchar": 8}}, "name": "t1"}}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_bit(self):
+        """BIT[(M)]
+        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+        """
+        sql = """CREATE TABLE t1 (a1 bit, a2 bit(1));"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "a1", "type": {"bit": {}}}, {"name": "a2", "type": {"bit": 1}},],
+            "name": "t1",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_bigint(self):
+        """ BIGINT[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 bigint, a2 bigint(3), a3 BIGINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"bigint": {}}},
+                {"name": "a2", "type": {"bigint": 3}},
+                {"name": "a3", "type": {"bigint": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_decimal(self):
+        """ DECIMAL[(M[,D])] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 decimal, a2 decimal(3), a3 decimal(15,2), a4 DECIMAL unsigned zerofill)"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"decimal": {}}},
+                {"name": "a2", "type": {"decimal": 3}},
+                {"name": "a3", "type": {"decimal": [15, 2]}},
+                {"name": "a4", "type": {"decimal": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_double(self):
+        """ DOUBLE[(M,D)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 double, a2 double(10,4), a3 DOUBLE unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"double": {}}},
+                {"name": "a2", "type": {"double": [10, 4]}},
+                {"name": "a3", "type": {"double": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_float(self):
+        """ FLOAT[(M,D)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 float, a2 float(53,0), a3 FLOAT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"float": {}}},
+                {"name": "a2", "type": {"float": [53, 0]}},
+                {"name": "a3", "type": {"float": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_int(self):
+        """ INT[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 int, a2 int(3), a3 INT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"int": {}}},
+                {"name": "a2", "type": {"int": 3}},
+                {"name": "a3", "type": {"int": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_integer(self):
+        """ INTEGER[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 integer, a2 integer(3), a3 INTEGER unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"integer": {}}},
+                {"name": "a2", "type": {"integer": 3}},
+                {"name": "a3", "type": {"integer": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_mediumint(self):
+        """ MEDIUMINT[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 mediumint, a2 mediumint(3), a3 MEDIUMINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"mediumint": {}}},
+                {"name": "a2", "type": {"mediumint": 3}},
+                {"name": "a3", "type": {"mediumint": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_dta_types_smallint(self):
+        """SMALLINT[(M)]
+        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+        """
+        sql = """CREATE TABLE tb (a1 smallint, a2 smallint(3), a3 SMALLINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"smallint": {}}},
+                {"name": "a2", "type": {"smallint": 3}},
+                {"name": "a3", "type": {"smallint": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_dta_types_tinyint(self):
+        """TINYINT[(M)] [UNSIGNED] [ZEROFILL][(M)]
+        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+        """
+        sql = """CREATE TABLE tb (a1 tinyint, a2 tinyint(3), a3 TINYINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "a1", "type": {"tinyint": {}}},
+                {"name": "a2", "type": {"tinyint": 3}},
+                {"name": "a3", "type": {"tinyint": {}, "unsigned": True, "zerofill": True}},
+            ],
+            "name": "tb",
+        }}
+        self.assertEqual(result, expected)
+
+    def test_create_table_dta_types_timestamp(self):
+        """TIMESTAMP[(M)]
+        refer: https://dev.mysql.com/doc/refman/8.0/en/datetime.html
+        """
+        sql = """
+            CREATE TABLE tb (
+                `update_time` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(3),
+                `create_time` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+            );
+        """
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [
+                {"name": "update_time", "on_update": {"current_timestamp": 3}, "type": {"timestamp": {}}},
+                {
+                    "default": {"current_timestamp": 3},
+                    "name": "create_time",
+                    "nullable": False,
+                    "type": {"timestamp": 3},
+                },
+            ],
+            "name": "tb",
+        }}
+
+    def test_update_order_by_limit(self):
+        """
+        refer: https://dev.mysql.com/doc/refman/5.7/en/update.html
+        """
+        sql = "UPDATE tb1 a SET a1='', a2 = now() WHERE a3='' ORDER BY a4 LIMIT 1, 2"
+        result = parse(sql)
+        expected = {
+            "update": {"name": "a", "value": "tb1"},
+            "set": {"a1": {"literal": ""}, "a2": {"now": {}}},
+            "where": {"eq": ["a3", {"literal": ""}]},
+            "orderby": {"value": "a4"},
+            "limit": 2,
+            "offset": 1,
+        }
+        self.assertEqual(result, expected)
+
+    def test_update_join(self):
+        """
+        refer: https://dev.mysql.com/doc/refman/5.7/en/update.html
+        """
+        sql = """
+            UPDATE tb1 a LEFT JOIN tb2 b ON a.a1 = b.b1 LEFT JOIN tb3 c ON a.a2 = c.c2 
+            SET a.a3 = b.b3, a.a4 = c.c4 
+            WHERE a.a5 = ''
+        """
+        result = parse(sql)
+        expected = {
+            "set": {"a.a3": "b.b3", "a.a4": "c.c4"},
+            "update": [
+                {"name": "a", "value": "tb1"},
+                {"left join": {"name": "b", "value": "tb2"}, "on": {"eq": ["a.a1", "b.b1"]}},
+                {"left join": {"name": "c", "value": "tb3"}, "on": {"eq": ["a.a2", "c.c2"]}},
+            ],
+            "where": {"eq": ["a.a5", {"literal": ""}]},
+        }
+        self.assertEqual(result, expected)
+
+    def test_straight_join_1(self):
+        sql = "SELECT * FROM table1 t1 STRAIGHT_JOIN table3 t3"
+        result = parse(sql)
+        expected = {
+            "from": [{"name": "t1", "value": "table1"}, {"straight_join": {"name": "t3", "value": "table3"}},],
+            "select": "*",
+        }
+        self.assertEqual(result, expected)
+
+    def test_straight_join_2(self):
+        sql = "SELECT * FROM table1 t1 STRAIGHT_JOIN table3 t3 ON t1.id = t3.id"
+        result = parse(sql)
+        expected = {
+            "from": [
+                {"name": "t1", "value": "table1"},
+                {"on": {"eq": ["t1.id", "t3.id"]}, "straight_join": {"name": "t3", "value": "table3"}},
+            ],
+            "select": "*",
+        }
+        self.assertEqual(result, expected)
+
+    def test_straight_join_3(self):
+        result = parse("SELECT t1.field1 FROM t1 STRAIGHT_JOIN t2 ON t1.id = t2.id STRAIGHT_JOIN t3 USING id")
+        expected = {
+            "select": {"value": "t1.field1"},
+            "from": [
+                "t1",
+                {"straight_join": "t2", "on": {"eq": ["t1.id", "t2.id"]}},
+                {"straight_join": "t3", "using": "id"},
+            ],
+        }
+        self.assertEqual(result, expected)
