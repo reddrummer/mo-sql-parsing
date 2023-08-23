@@ -38,7 +38,6 @@ from mo_sql_parsing.keywords import (
     LT,
     GT,
     AS,
-    SET,
 )
 from mo_sql_parsing.utils import (
     keyword,
@@ -66,7 +65,7 @@ FLOAT = Group(keyword("float")("op") + Optional(flag("unsigned"))) / to_json_cal
 GEOMETRY = Group(keyword("geometry")("op")) / to_json_call
 INTEGER = Group(keyword("integer")("op") + Optional(flag("unsigned"))) / to_json_call
 INTERVAL = Group(keyword("interval")("op")) / to_json_call
-INT = (keyword("int")("op") + _size + Optional(flag("unsigned"))) / to_json_call
+INT = (keyword("int")("op") + _size + Optional(flag("unsigned")) + Optional(flag("zerofill"))) / to_json_call
 INT32 = Group(keyword("int32")("op")) / to_json_call
 INT64 = Group(keyword("int64")("op")) / to_json_call
 BYTEINT = Group(keyword("byteint")("op")) / to_json_call

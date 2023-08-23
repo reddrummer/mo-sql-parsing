@@ -531,3 +531,13 @@ class TestMySql(TestCase):
                 "constraint": {"primary_key": {"columns": "a1", "comment": {"literal": "t"}, "using": "BTREE"}},
                 "name": "t1"}}
         self.assertEqual(result, expected)
+
+    def test_create_table_6(self):
+        sql = """CREATE TABLE t1 (a1 int(3) unsigned zerofill NOT NULL);"""
+        result = parse(sql)
+        expected = {
+            "create table": {
+                "columns": {"name": "a1", "nullable": False,
+                            "type": {"int": 3, "unsigned": True, "zerofill": True}},
+                "name": "t1"}}
+        self.assertEqual(result, expected)
