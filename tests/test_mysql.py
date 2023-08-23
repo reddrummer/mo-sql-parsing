@@ -466,26 +466,6 @@ class TestMySql(TestCase):
     def test_create_table_1(self):
         sql = """
             create table student (
-                `name` varchar(64), 
-                `update_time` TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-                `create_time` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
-            );
-        """
-        result = parse(sql)
-        expected = {
-            "create table": {
-                "columns": [
-                    {"name": "name", "type": {"varchar": 64}},
-                    {"name": "update_time", "on_update": {"current_timestamp": 3}, "type": {"timestamp": 3}},
-                    {"default": {"current_timestamp": 3}, "name": "create_time", "nullable": False,
-                     "type": {"timestamp": 3}}
-                ],
-                "name": "student"}}
-        self.assertEqual(result, expected)
-
-    def test_create_table_2(self):
-        sql = """
-            create table student (
                 `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'name',
                 `class` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'class',
             );
@@ -501,7 +481,7 @@ class TestMySql(TestCase):
                 "name": "student"}}
         self.assertEqual(result, expected)
 
-    def test_create_table_3(self):
+    def test_create_table_2(self):
         sql = """CREATE TABLE t2 (c1 INT) ROW_FORMAT=DEFAULT;"""
         result = parse(sql)
         expected = {
@@ -510,7 +490,7 @@ class TestMySql(TestCase):
             }}
         self.assertEqual(result, expected)
 
-    def test_create_table_4(self):
+    def test_create_table_3(self):
         sql = """CREATE TABLE t1 (a1 INT, KEY `idn_a1` (`a1`) USING BTREE COMMENT 't1 a1');"""
         result = parse(sql)
         expected = {
@@ -522,7 +502,7 @@ class TestMySql(TestCase):
                 "name": "t1"}}
         self.assertEqual(result, expected)
 
-    def test_create_table_5(self):
+    def test_create_table_4(self):
         sql = """CREATE TABLE t1 (a1 INT, PRIMARY KEY (`a1`) USING BTREE COMMENT 't');"""
         result = parse(sql)
         expected = {
@@ -532,34 +512,7 @@ class TestMySql(TestCase):
                 "name": "t1"}}
         self.assertEqual(result, expected)
 
-    def test_create_table_6(self):
-        """ ZEROFILL
-        refer: https://dev.mysql.com/doc/refman/8.0/en/create-table.html
-        """
-        sql = """CREATE TABLE t1 (a1 int(3) unsigned zerofill NOT NULL);"""
-        result = parse(sql)
-        expected = {
-            "create table": {
-                "columns": {"name": "a1", "nullable": False,
-                            "type": {"int": 3, "unsigned": True, "zerofill": True}},
-                "name": "t1"
-            }
-        }
-        self.assertEqual(result, expected)
-
-    def test_create_table_7(self):
-        """ DOUBLE(M,D)
-        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
-        """
-        sql = """CREATE TABLE t1 (a1 double(10,4) DEFAULT NULL);"""
-        result = parse(sql)
-        expected = {
-            "create table": {"columns": {"name": "a1", "default": {"null": {}}, "type": {"double": [10, 4]}},
-                             "name": "t1"}
-        }
-        self.assertEqual(result, expected)
-
-    def test_create_table_8(self):
+    def test_create_table_5(self):
         """ CHECKSUM [=] {0 | 1}
         refer: https://dev.mysql.com/doc/refman/8.0/en/create-table.html
         """
@@ -570,11 +523,157 @@ class TestMySql(TestCase):
         }
         self.assertEqual(result, expected)
 
-    def test_create_table_9(self):
-        """ BIT(M)
+    def test_create_table_data_types_bit(self):
+        """ BIT[(M)]
         refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
         """
-        sql = """CREATE TABLE t1 (a1 bit(1));"""
+        sql = """CREATE TABLE t1 (a1 bit, a2 bit(1));"""
         result = parse(sql)
-        expected = {"create table": {"columns": {"name": "a1", "type": {"bit": 1}}, "name": "t1"}}
+        expected = {"create table": {"columns": [
+            {"name": "a1", "type": {"bit": {}}},
+            {"name": "a2", "type": {"bit": 1}},
+        ], "name": "t1"}}
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_bigint(self):
+        """ BIGINT[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 bigint, a2 bigint(3), a3 BIGINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"bigint": {}}},
+                {"name": "a2", "type": {"bigint": 3}},
+                {"name": "a3", "type": {"bigint": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_decimal(self):
+        """ DECIMAL[(M[,D])] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 decimal, a2 decimal(3), a3 decimal(15,2), a4 DECIMAL unsigned zerofill)"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"decimal": {}}},
+                {"name": "a2", "type": {"decimal": 3}},
+                {"name": "a3", "type": {"decimal": [15, 2]}},
+                {"name": "a4", "type": {"decimal": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_double(self):
+        """ DOUBLE[(M,D)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 double, a2 double(10,4), a3 DOUBLE unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"double": {}}},
+                {"name": "a2", "type": {"double": [10, 4]}},
+                {"name": "a3", "type": {"double": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_float(self):
+        """ FLOAT[(M,D)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 float, a2 float(53,0), a3 FLOAT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"float": {}}},
+                {"name": "a2", "type": {"float": [53, 0]}},
+                {"name": "a3", "type": {"float": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_int(self):
+        """ INT[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 int, a2 int(3), a3 INT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"int": {}}},
+                {"name": "a2", "type": {"int": 3}},
+                {"name": "a3", "type": {"int": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_integer(self):
+        """ INTEGER[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 integer, a2 integer(3), a3 INTEGER unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"integer": {}}},
+                {"name": "a2", "type": {"integer": 3}},
+                {"name": "a3", "type": {"integer": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_data_types_mediumint(self):
+        """ MEDIUMINT[(M)] [UNSIGNED] [ZEROFILL] """
+        sql = """CREATE TABLE tb (a1 mediumint, a2 mediumint(3), a3 MEDIUMINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"mediumint": {}}},
+                {"name": "a2", "type": {"mediumint": 3}},
+                {"name": "a3", "type": {"mediumint": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_dta_types_smallint(self):
+        """ SMALLINT[(M)]
+        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+        """
+        sql = """CREATE TABLE tb (a1 smallint, a2 smallint(3), a3 SMALLINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"smallint": {}}},
+                {"name": "a2", "type": {"smallint": 3}},
+                {"name": "a3", "type": {"smallint": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_dta_types_tinyint(self):
+        """ TINYINT[(M)] [UNSIGNED] [ZEROFILL][(M)]
+        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+        """
+        sql = """CREATE TABLE tb (a1 tinyint, a2 tinyint(3), a3 TINYINT unsigned zerofill);"""
+        result = parse(sql)
+        expected = {
+            "create table": {"columns": [
+                {"name": "a1", "type": {"tinyint": {}}},
+                {"name": "a2", "type": {"tinyint": 3}},
+                {"name": "a3", "type": {"tinyint": {}, "unsigned": True, "zerofill": True}},
+            ], "name": "tb"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_dta_types_timestamp(self):
+        """ TIMESTAMP[(M)]
+        refer: https://dev.mysql.com/doc/refman/8.0/en/datetime.html
+        """
+        sql = """
+            CREATE TABLE tb (
+                `update_time` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(3),
+                `create_time` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+            );
+        """
+        result = parse(sql)
+        expected = {
+            "create table": {
+                "columns": [
+                    {"name": "update_time", "on_update": {"current_timestamp": 3}, "type": {"timestamp": {}}},
+                    {"default": {"current_timestamp": 3}, "name": "create_time", "nullable": False,
+                     "type": {"timestamp": 3}}
+                ],
+                "name": "tb"}}
         self.assertEqual(result, expected)
