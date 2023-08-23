@@ -533,21 +533,48 @@ class TestMySql(TestCase):
         self.assertEqual(result, expected)
 
     def test_create_table_6(self):
+        """ ZEROFILL
+        refer: https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+        """
         sql = """CREATE TABLE t1 (a1 int(3) unsigned zerofill NOT NULL);"""
         result = parse(sql)
         expected = {
             "create table": {
                 "columns": {"name": "a1", "nullable": False,
                             "type": {"int": 3, "unsigned": True, "zerofill": True}},
-                "name": "t1"}}
+                "name": "t1"
+            }
+        }
         self.assertEqual(result, expected)
 
     def test_create_table_7(self):
+        """ DOUBLE(M,D)
+        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+        """
         sql = """CREATE TABLE t1 (a1 double(10,4) DEFAULT NULL);"""
         result = parse(sql)
         expected = {
-            "create table": {
-                "columns": {"name": "a1", "default": {"null": {}},
-                            "type": {"double": [10, 4]}},
-                "name": "t1"}}
+            "create table": {"columns": {"name": "a1", "default": {"null": {}}, "type": {"double": [10, 4]}},
+                             "name": "t1"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_8(self):
+        """ CHECKSUM [=] {0 | 1}
+        refer: https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+        """
+        sql = """CREATE TABLE t1 (a1 varchar(8)) CHECKSUM=1;"""
+        result = parse(sql)
+        expected = {
+            "create table": {"checksum": 1, "columns": {"name": "a1", "type": {"varchar": 8}}, "name": "t1"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_create_table_9(self):
+        """ BIT(M)
+        refer: https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+        """
+        sql = """CREATE TABLE t1 (a1 bit(1));"""
+        result = parse(sql)
+        expected = {"create table": {"columns": {"name": "a1", "type": {"bit": 1}}, "name": "t1"}}
         self.assertEqual(result, expected)

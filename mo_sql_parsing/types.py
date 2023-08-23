@@ -55,6 +55,7 @@ _sizes = Optional(LB + delimited_list(int_num("params")) + RB)
 simple_types = Forward()
 
 BIGINT = Group(keyword("bigint")("op") + Optional(_size) + Optional(flag("unsigned"))) / to_json_call
+BIT = (keyword("bit")("op") + _size) / to_json_call
 BOOL = Group(keyword("bool")("op")) / to_json_call
 BOOLEAN = Group(keyword("boolean")("op")) / to_json_call
 DOUBLE = Group(keyword("double")("op") + Optional(_sizes) + Optional(flag("unsigned"))) / to_json_call
@@ -79,12 +80,12 @@ BLOB = (keyword("blob")("op") + _size) / to_json_call
 BYTES = (keyword("bytes")("op") + _size) / to_json_call
 
 CHAR = (
-    Combine(
-        (Keyword("char", caseless=True) | Keyword("character", caseless=True))
-        + Optional(Keyword("varying", caseless=True) / "_varying")
-    )("op")
-    + _size
-) / to_json_call
+               Combine(
+                   (Keyword("char", caseless=True) | Keyword("character", caseless=True))
+                   + Optional(Keyword("varying", caseless=True) / "_varying")
+               )("op")
+               + _size
+       ) / to_json_call
 
 NCHAR = (keyword("nchar")("op") + _size) / to_json_call
 VARCHAR = (keyword("varchar")("op") + _size) / to_json_call
@@ -92,7 +93,6 @@ VARCHAR2 = (keyword("varchar2")("op") + _size) / to_json_call
 VARBINARY = (keyword("varbinary")("op") + _size) / to_json_call
 TINYINT = (keyword("tinyint")("op") + _size + Optional(flag("unsigned"))) / to_json_call
 UUID = Group(keyword("uuid")("op")) / to_json_call
-
 
 DECIMAL = (keyword("decimal")("op") + _sizes) / to_json_call
 DOUBLE_PRECISION = Group((keyword("double precision") / "double_precision")("op")) / to_json_call
@@ -129,6 +129,7 @@ TIMETZ_TYPE = (TIMETZ("op") + _format) / to_json_call
 simple_types << MatchFirst([
     ARRAY_TYPE,
     BIGINT,
+    BIT,
     BOOL,
     BOOLEAN,
     BLOB,
@@ -189,28 +190,29 @@ def get_column_type(expr, identifier, literal_string):
     column_type = Forward()
 
     struct_type = (
-        keyword("struct")("op") + LT.suppress() + Group(delimited_list(column_definition))("params") + GT.suppress()
-    ) / to_json_call
+                          keyword("struct")("op") + LT.suppress() + Group(delimited_list(column_definition))(
+                      "params") + GT.suppress()
+                  ) / to_json_call
 
     row_type = (keyword("row")("op") + LB + Group(delimited_list(column_definition))("params") + RB) / to_json_call
 
     array_type = (
-        keyword("array")("op")
-        + (
-            (LT.suppress() + Group(delimited_list(column_type))("params") + GT.suppress())
-            | (LB + Group(delimited_list(column_type))("params") + RB)
-        )
-    ) / to_json_call
+                         keyword("array")("op")
+                         + (
+                                 (LT.suppress() + Group(delimited_list(column_type))("params") + GT.suppress())
+                                 | (LB + Group(delimited_list(column_type))("params") + RB)
+                         )
+                 ) / to_json_call
 
     column_type << (struct_type | row_type | array_type | simple_types)("type") + Optional(
         AS + LB + expr("value") + RB
     )
 
     column_def_identity = (
-        assign("generated", (keyword("always") | keyword("by default") / "by_default"),)
-        + keyword("as identity").suppress()
-        + Optional(assign("start with", int_num))
-        + Optional(assign("increment by", int_num))
+            assign("generated", (keyword("always") | keyword("by default") / "by_default"), )
+            + keyword("as identity").suppress()
+            + Optional(assign("start with", int_num))
+            + Optional(assign("increment by", int_num))
     )
 
     column_def_references = assign(
@@ -218,20 +220,20 @@ def get_column_type(expr, identifier, literal_string):
     )
 
     column_options = (
-        (NOT + NULL)("nullable") / False
-        | keyword("not enforced")("enforced") / False
-        | (NULL / True)("nullable")
-        | flag("unique")
-        | flag("auto_increment")
-        | assign("comment", literal_string)
-        | assign("character set", identifier)
-        | assign("collate", Optional(EQ) + identifier)
-        | flag("primary key")
-        | column_def_identity("identity")
-        | column_def_references
-        | assign("check", LB + expr + RB)
-        | assign("default", expr)
-        | assign("on update", expr)
+            (NOT + NULL)("nullable") / False
+            | keyword("not enforced")("enforced") / False
+            | (NULL / True)("nullable")
+            | flag("unique")
+            | flag("auto_increment")
+            | assign("comment", literal_string)
+            | assign("character set", identifier)
+            | assign("collate", Optional(EQ) + identifier)
+            | flag("primary key")
+            | column_def_identity("identity")
+            | column_def_references
+            | assign("check", LB + expr + RB)
+            | assign("default", expr)
+            | assign("on update", expr)
     )
 
     column_definition << Group(identifier("name") + (column_type | identifier("type")) + ZeroOrMore(column_options))

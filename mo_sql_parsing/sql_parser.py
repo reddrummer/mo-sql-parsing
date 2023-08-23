@@ -607,6 +607,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 | assign("default character set", EQ + identifier)
                 | assign("default charset", EQ + identifier)
                 | assign("row_format", EQ + identifier)
+                | assign("checksum", EQ + int_num)
             )
             + Optional(AS.suppress() + infix_notation(query, [])("query"))
         )("create table")
