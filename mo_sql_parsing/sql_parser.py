@@ -682,14 +682,15 @@ def parser(literal_string, simple_ident, sqlserver=False):
         ) / to_insert_call
 
         update = (
-            keyword("update").suppress()
-            + identifier("value")
-            + Optional(identifier("name"))
+            keyword("update")("op")
+            + (delimited_list(table_source) + ZeroOrMore(join))("params")
             + assign("set", Dict(delimited_list(Group(identifier + EQ + expression))))
             + Optional((FROM + delimited_list(table_source) + ZeroOrMore(join))("from"))
             + Optional(WHERE + expression("where"))
+            + Optional(ORDER_BY + delimited_list(Group(sort_column))("orderby"))
+            + limit
             + returning
-        ) / to_update_call
+        ) / to_json_call
 
         delete_options = ["low_priority", "quick", "ignore"]
 
