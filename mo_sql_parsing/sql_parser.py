@@ -570,13 +570,16 @@ def parser(literal_string, simple_ident, sqlserver=False):
         index_options = ZeroOrMore(identifier / (lambda t: {t[0]: True}))
 
         table_constraint_definition = Optional(CONSTRAINT + identifier("name")) + (
-            assign("primary key", index_type + index_column_names + index_type + index_options)
+            assign("primary key", index_type + index_column_names + index_type
+                   + Optional(assign("comment", literal_string))
+                   + index_options)
             | (
                 Optional(flag("unique"))
                 + Optional(INDEX | KEY)
                 + Optional(identifier("name"))
                 + index_column_names
                 + index_type
+                + Optional(assign("comment", literal_string))
                 + index_options
             )("index")
             | assign("check", LB + expression + RB)
@@ -603,6 +606,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 | assign("comment", EQ + literal_string)
                 | assign("default character set", EQ + identifier)
                 | assign("default charset", EQ + identifier)
+                | assign("row_format", EQ + identifier)
+                | assign("checksum", EQ + int_num)
             )
             + Optional(AS.suppress() + infix_notation(query, [])("query"))
         )("create table")
