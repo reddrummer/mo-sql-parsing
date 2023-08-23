@@ -462,6 +462,7 @@ class TestMySql(TestCase):
         }
         self.assertEqual(result, expected)
 
+<<<<<<< HEAD
     def test_create_table_1(self):
         sql = """
             create table student (
@@ -708,3 +709,40 @@ class TestMySql(TestCase):
             ],
             "where": {"eq": ["a.a5", {"literal": ""}]}}
         self.assertEqual(result, expected)
+=======
+    def test_straight_join_1(self):
+        sql = "SELECT * FROM table1 t1 STRAIGHT_JOIN table3 t3"
+        result = parse(sql)
+        expected = {
+            "from": [
+                {"name": "t1", "value": "table1"},
+                {"straight_join": {"name": "t3", "value": "table3"}},
+            ],
+            "select": "*",
+        }
+        self.assertEqual(result, expected)
+
+    def test_straight_join_2(self):
+        sql = "SELECT * FROM table1 t1 STRAIGHT_JOIN table3 t3 ON t1.id = t3.id"
+        result = parse(sql)
+        expected = {
+            "from": [
+                {"name": "t1", "value": "table1"},
+                {"on": {"eq": ["t1.id", "t3.id"]}, "straight_join": {"name": "t3", "value": "table3"}},
+            ],
+            "select": "*",
+        }
+        self.assertEqual(result, expected)
+
+    def test_straight_join_3(self):
+        result = parse("SELECT t1.field1 FROM t1 STRAIGHT_JOIN t2 ON t1.id = t2.id STRAIGHT_JOIN t3 USING id")
+        expected = {
+            "select": {"value": "t1.field1"},
+            "from": [
+                "t1",
+                {"straight_join": "t2", "on": {"eq": ["t1.id", "t2.id"]}},
+                {'straight_join': 't3', 'using': 'id'},
+            ],
+        }
+        self.assertEqual(result, expected)
+>>>>>>> e14926044002d4b312a2d352643ed0584ca4d371
