@@ -462,7 +462,6 @@ class TestMySql(TestCase):
         }
         self.assertEqual(result, expected)
 
-<<<<<<< HEAD
     def test_create_table_1(self):
         sql = """
             create table student (
@@ -709,7 +708,7 @@ class TestMySql(TestCase):
             ],
             "where": {"eq": ["a.a5", {"literal": ""}]}}
         self.assertEqual(result, expected)
-=======
+
     def test_straight_join_1(self):
         sql = "SELECT * FROM table1 t1 STRAIGHT_JOIN table3 t3"
         result = parse(sql)
@@ -745,4 +744,3 @@ class TestMySql(TestCase):
             ],
         }
         self.assertEqual(result, expected)
->>>>>>> e14926044002d4b312a2d352643ed0584ca4d371
