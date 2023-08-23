@@ -461,3 +461,37 @@ class TestMySql(TestCase):
             "where": {"eq": ["a1.id", "a2.id"]},
         }
         self.assertEqual(result, expected)
+
+    def test_update_order_by_limit(self):
+        """
+        refer: https://dev.mysql.com/doc/refman/5.7/en/update.html
+        """
+        sql = "UPDATE tb1 a SET a1='', a2 = now() WHERE a3='' ORDER BY a4 LIMIT 1, 2"
+        result = parse(sql)
+        expected = {
+            "update": {"name": "a", "value": "tb1"},
+            "set": {"a1": {"literal": ""}, "a2": {"now": {}}},
+            "where": {"eq": ["a3", {"literal": ""}]},
+            "orderby": {"value": "a4"}, "limit": 2, "offset": 1
+        }
+        self.assertEqual(result, expected)
+
+    def test_update_join(self):
+        """
+        refer: https://dev.mysql.com/doc/refman/5.7/en/update.html
+        """
+        sql = """
+            UPDATE tb1 a LEFT JOIN tb2 b ON a.a1 = b.b1 LEFT JOIN tb3 c ON a.a2 = c.c2 
+            SET a.a3 = b.b3, a.a4 = c.c4 
+            WHERE a.a5 = ''
+        """
+        result = parse(sql)
+        expected = {
+            "set": {"a.a3": "b.b3", "a.a4": "c.c4"},
+            "update": [
+                {"name": "a", "value": "tb1"},
+                {"left join": {"name": "b", "value": "tb2"}, "on": {"eq": ["a.a1", "b.b1"]}},
+                {"left join": {"name": "c", "value": "tb3"}, "on": {"eq": ["a.a2", "c.c2"]}}
+            ],
+            "where": {"eq": ["a.a5", {"literal": ""}]}}
+        self.assertEqual(result, expected)
