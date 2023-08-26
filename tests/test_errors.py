@@ -75,6 +75,7 @@ class TestErrors(FuzzyTestCase):
             parse(sql)
 
     def test_issue_88_parse_error(self):
+      with Debugger():
         sql = """select c1, c as 't' from T"""
         with self.assertRaises("Expecting identifier, found \"'t'"):
             parse(sql)

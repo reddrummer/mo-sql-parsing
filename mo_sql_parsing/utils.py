@@ -14,9 +14,11 @@ from mo_dots import is_data, is_null, Data, from_data, literal_field, unliteral_
 from mo_future import text, number_types, binary_type, flatten
 from mo_imports import expect
 from mo_parsing import *
+from mo_parsing import whitespaces
 from mo_parsing.utils import is_number, listwrap
 
 unary_ops = expect("unary_ops")
+
 
 
 class Call(object):
@@ -845,3 +847,23 @@ copy_params = (
     "TRUNCATECOLUMNS",
     "VALIDATION_MODE",
 )
+
+
+def no_dashes(tokens, start, string):
+    if "-" in tokens[0]:
+        index = tokens[0].find("-")
+        raise ParseException(
+            tokens.type,
+            start + index + 1,  # +1 TO ENSURE THIS MESSAGE HAS PRIORITY
+            string,
+            """Ambiguity: Use backticks (``) around identifiers with dashes, or add space around subtraction operator.""",
+        )
+
+
+digit = Char("0123456789")
+with whitespaces.NO_WHITESPACE:
+    ident_w_dash = Char(FIRST_IDENT_CHAR) + (Regex("(?<=[^ 0-9])\\-(?=[^ 0-9])") | Char(IDENT_CHAR))[...]
+    ident_w_dash = Regex(ident_w_dash.__regex__()[1]).set_parser_name("identifier_with_dashes") / no_dashes
+
+simple_ident = Word(FIRST_IDENT_CHAR, IDENT_CHAR).set_parser_name("identifier")
+
