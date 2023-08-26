@@ -828,3 +828,12 @@ class TestMySql(TestCase):
                 "utf8_bin",
             ]}}}
             self.assertEqual(result, expected)
+
+    def test_issue_200_assign(self):
+        sql = "SELECT @var1 := 1, @var2 := @var1 + 1;"
+        result = parse(sql)
+        expected = {"select": [
+            {"value": {"assign": ["@var1", 1]}},
+            {"value": {"assign": ["@var2", {"add": ["@var1", 1]}]}},
+        ]}
+        self.assertEqual(result, expected)

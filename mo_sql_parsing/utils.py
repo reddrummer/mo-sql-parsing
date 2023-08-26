@@ -295,6 +295,7 @@ binary_ops = {
     "or": "or",
     "and": "and",
     "->": "lambda",
+    ":=": "assign",
     "union": "union",
     "union_all": "union_all",
     "union all": "union_all",
