@@ -123,6 +123,7 @@ INDF = (
 REGEXP = keyword("regexp").set_parser_name("rgx")
 NEQ = (Literal("!=") | Literal("<>")).set_parser_name("neq")
 LAMBDA = Literal("->").set_parser_name("lambda")
+ASSIGN = Literal(":=").set_parser_name("assign")
 
 AND = keyword("and")
 APPLY = keyword("apply")
@@ -316,6 +317,7 @@ precedence = {
     "and": 10,
     "or": 11,
     "lambda": 12,
+    "assign": 13,
     "join": 18,
     "list": 18,
     "case": 19,
@@ -361,6 +363,7 @@ KNOWN_OPS = [
     AND,
     OR,
     LAMBDA,
+    ASSIGN,
     REGEXP,
     NOT_REGEXP,
 ]

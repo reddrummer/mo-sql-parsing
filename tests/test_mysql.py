@@ -9,11 +9,12 @@
 
 from unittest import TestCase
 
-from mo_parsing.debug import Debugger
+from mo_testing.fuzzytestcase import add_error_reporting
 
-from mo_sql_parsing import parse, parse_mysql, normal_op, format
+from mo_sql_parsing import parse, parse_mysql
 
 
+@add_error_reporting
 class TestMySql(TestCase):
     def test_issue_22(self):
         sql = 'SELECT "fred"'
@@ -770,4 +771,71 @@ class TestMySql(TestCase):
                 {"straight_join": "t3", "using": "id"},
             ],
         }
+        self.assertEqual(result, expected)
+
+    def test_issue_199_convert1(self):
+        sql = "SELECT CAST('2000-01-01' AS DATE),  CAST('123' AS UNSIGNED INTEGER), CAST('123' AS SIGNED INTEGER)"
+        result = parse(sql)
+        expected = {"select": [
+            {"value": {"cast": [{"literal": "2000-01-01"}, {"date": {}}]}},
+            {"value": {"cast": [{"literal": "123"}, {"bigint": {}, "unsigned": True}]}},
+            {"value": {"cast": [{"literal": "123"}, {"bigint": {}}]}},
+        ]}
+        self.assertEqual(result, expected)
+
+    def test_issue_199_convert2(self):
+        sql = "SELECT a1 FROM tb WHERE a2=CAST(CAST(1 - 2 AS UNSIGNED) AS SIGNED)"
+        result = parse(sql)
+        expected = {
+            "from": "tb",
+            "select": {"value": "a1"},
+            "where": {"eq": [
+                "a2",
+                {"cast": [{"cast": [{"sub": [1, 2]}, {"bigint": {}, "unsigned": True}]}, {"bigint": {}}]},
+            ]},
+        }
+
+        self.assertEqual(result, expected)
+
+    def test_issue_199_convert3(self):
+        sql = "SELECT CAST('test' AS CHAR CHARACTER SET utf8) COLLATE utf8_bin"
+        result = parse(sql)
+        expected = {"select": {"value": {"collate": [
+            {"cast": [{"literal": "test"}, {"char": {}, "character_set": "utf8"}]},
+            "utf8_bin",
+        ]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_199_convert4(self):
+        sql = "SELECT CONVERT('test' USING utf8)"
+        result = parse(sql)
+        expected = {"select": {"value": {"convert": [{"literal": "test"}, {"using": "utf8"}]}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_199_convert5(self):
+        sql = "SELECT CONVERT('test' USING utf8) COLLATE utf8_bin"
+        result = parse(sql)
+        expected = {"select": {"value": {"collate": [
+            {"convert": [{"literal": "test"}, {"using": "utf8"}]},
+            "utf8_bin",
+        ]}}}
+
+        self.assertEqual(result, expected)
+
+    def test_issue_199_convert6(self):
+            sql = "SELECT CONVERT('test', CHAR CHARACTER SET utf8) COLLATE utf8_bin"
+            result = parse(sql)
+            expected = {"select": {"value": {"collate": [
+                {"convert": [{"literal": "test"}, {"char": {}, "character_set": "utf8"}]},
+                "utf8_bin",
+            ]}}}
+            self.assertEqual(result, expected)
+
+    def test_issue_200_assign(self):
+        sql = "SELECT @var1 := 1, @var2 := @var1 + 1;"
+        result = parse(sql)
+        expected = {"select": [
+            {"value": {"assign": ["@var1", 1]}},
+            {"value": {"assign": ["@var2", {"add": ["@var1", 1]}]}},
+        ]}
         self.assertEqual(result, expected)

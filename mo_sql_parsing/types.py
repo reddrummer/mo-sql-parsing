@@ -39,17 +39,12 @@ from mo_sql_parsing.keywords import (
     GT,
     AS,
 )
-from mo_sql_parsing.utils import (
-    keyword,
-    to_json_call,
-    int_num,
-    ansi_string,
-    ansi_ident,
-    assign,
-    flag,
-)
+from mo_sql_parsing.utils import keyword, to_json_call, int_num, ansi_string, ansi_ident, assign, flag, simple_ident, \
+    to_flat_column_type
 
 _size = Optional(LB + int_num("params") + RB)
+_char_set = Optional(assign("character set", simple_ident))
+
 _sizes = Optional(LB + delimited_list(int_num("params")) + RB)
 
 _type_attrs = Optional(flag("unsigned")) + Optional(flag("zerofill"))
@@ -61,22 +56,25 @@ BIT = (keyword("bit")("op") + _size) / to_json_call
 BOOL = Group(keyword("bool")("op")) / to_json_call
 BOOLEAN = Group(keyword("boolean")("op")) / to_json_call
 DOUBLE = Group(keyword("double")("op") + Optional(_sizes) + _type_attrs) / to_json_call
-FLOAT64 = Group(keyword("float64")("op")) / to_json_call
 BIGNUMERIC = Group(keyword("bignumeric")("op")) / to_json_call
 BIGDECIMAL = Group(keyword("bigdecimal")("op")) / to_json_call
+BYTEINT = Group(keyword("byteint")("op")) / to_json_call
 FLOAT = Group(keyword("float")("op") + Optional(_sizes) + _type_attrs) / to_json_call
+FLOAT64 = Group(keyword("float64")("op")) / to_json_call
 GEOMETRY = Group(keyword("geometry")("op")) / to_json_call
 INTEGER = Group(keyword("integer")("op") + _size + _type_attrs) / to_json_call
 INTERVAL = Group(keyword("interval")("op")) / to_json_call
 INT = (keyword("int")("op") + _size + _type_attrs) / to_json_call
 INT32 = Group(keyword("int32")("op")) / to_json_call
 INT64 = Group(keyword("int64")("op")) / to_json_call
-BYTEINT = Group(keyword("byteint")("op")) / to_json_call
-REAL = Group(keyword("real")("op") + Optional(flag("unsigned"))) / to_json_call
-TEXT = Group(keyword("text")("op")) / to_json_call
 MEDIUMINT = Group(keyword("mediumint")("op") + _size + _type_attrs) / to_json_call
 SMALLINT = Group(keyword("smallint")("op") + _size + _type_attrs) / to_json_call
-STRING = Group(keyword("string")("op")) / to_json_call
+REAL = Group(keyword("real")("op") + Optional(flag("unsigned"))) / to_json_call
+SIGNED = Group(flag("unsigned") + Optional(keyword("integer"))("op") / "bigint") / to_json_call
+TINYINT = (keyword("tinyint")("op") + _size + _type_attrs) / to_json_call
+UNSIGNED = (
+    Group(Keyword("signed", caseless=True).suppress() + Optional(keyword("integer"))("op") / "bigint") / to_json_call
+)
 VARYING = Group(keyword("varying")("op")) / to_json_call
 
 BLOB = (keyword("blob")("op") + _size) / to_json_call
@@ -88,13 +86,16 @@ CHAR = (
         + Optional(Keyword("varying", caseless=True) / "_varying")
     )("op")
     + _size
+    + _char_set
 ) / to_json_call
 
-NCHAR = (keyword("nchar")("op") + _size) / to_json_call
-VARCHAR = (keyword("varchar")("op") + _size) / to_json_call
-VARCHAR2 = (keyword("varchar2")("op") + _size) / to_json_call
-VARBINARY = (keyword("varbinary")("op") + _size) / to_json_call
-TINYINT = (keyword("tinyint")("op") + _size + _type_attrs) / to_json_call
+NCHAR = (keyword("nchar")("op") + _size + _char_set) / to_json_call
+VARCHAR = (keyword("varchar")("op") + _size + _char_set) / to_json_call
+VARCHAR2 = (keyword("varchar2")("op") + _size + _char_set) / to_json_call
+VARBINARY = (keyword("varbinary")("op") + _size + _char_set) / to_json_call
+TEXT = Group(keyword("text")("op") + _char_set) / to_json_call
+STRING = Group(keyword("string")("op") + _char_set) / to_json_call
+USING_T = Group(keyword("using")("op") + simple_ident("params")) / to_json_call
 UUID = Group(keyword("uuid")("op")) / to_json_call
 
 DECIMAL = (keyword("decimal")("op") + _sizes + _type_attrs) / to_json_call
@@ -165,12 +166,15 @@ simple_types << MatchFirst([
     MEDIUMINT,
     SMALLINT,
     STRING,
+    SIGNED,
+    UNSIGNED,
     TIME_TYPE,
     TIMESTAMP_W_TIMEZONE_TYPE,
     TIMESTAMP_TYPE,
     TIMESTAMPTZ_TYPE,
     TIMETZ_TYPE,
     TINYINT,
+    USING_T,
     UUID,
     VARCHAR,
     VARCHAR2,
@@ -187,6 +191,8 @@ unary_ops = {
     BINARY_NOT: RIGHT_ASSOC,
     CASTING: LEFT_ASSOC,
 }
+
+set_parser_names()
 
 
 def get_column_type(expr, identifier, literal_string):
@@ -239,7 +245,7 @@ def get_column_type(expr, identifier, literal_string):
         | assign("on update", expr)
     )
 
-    column_definition << Group(identifier("name") + (column_type | identifier("type")) + ZeroOrMore(column_options))
+    column_definition << Group(identifier("name") + (column_type | identifier("type")) + ZeroOrMore(column_options)) / to_flat_column_type
 
     set_parser_names()
 

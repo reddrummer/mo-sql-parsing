@@ -6,7 +6,7 @@
 #
 # Contact: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from mo_parsing import whitespaces, debug, Null
+from mo_parsing import debug, Null
 from mo_parsing.whitespaces import NO_WHITESPACE, Whitespace
 
 from mo_sql_parsing import utils
@@ -14,25 +14,6 @@ from mo_sql_parsing.keywords import *
 from mo_sql_parsing.types import get_column_type, time_functions, _sizes
 from mo_sql_parsing.utils import *
 from mo_sql_parsing.windows import window
-
-
-def no_dashes(tokens, start, string):
-    if "-" in tokens[0]:
-        index = tokens[0].find("-")
-        raise ParseException(
-            tokens.type,
-            start + index + 1,  # +1 TO ENSURE THIS MESSAGE HAS PRIORITY
-            string,
-            """Ambiguity: Use backticks (``) around identifiers with dashes, or add space around subtraction operator.""",
-        )
-
-
-digit = Char("0123456789")
-with whitespaces.NO_WHITESPACE:
-    ident_w_dash = Char(FIRST_IDENT_CHAR) + (Regex("(?<=[^ 0-9])\\-(?=[^ 0-9])") | Char(IDENT_CHAR))[...]
-    ident_w_dash = Regex(ident_w_dash.__regex__()[1]).set_parser_name("identifier_with_dashes") / no_dashes
-
-simple_ident = Word(FIRST_IDENT_CHAR, IDENT_CHAR).set_parser_name("identifier")
 
 
 def common_parser():
@@ -94,10 +75,10 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         casting = MatchFirst([
             (
-                Group(Keyword(c, caseless=True)("op") + LB + expression("params") + AS + column_type("params") + RB)
+                Group(Keyword(c, caseless=True)("op") + LB + expression("params") + Optional(AS | comma) + column_type("params") + RB)
                 / to_json_call
             )
-            for c in ["cast", "safe_cast", "try_cast"]
+            for c in ["cast", "safe_cast", "try_cast", "convert"]
         ])
 
         substring = (
@@ -246,7 +227,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         # ARRAY < STRING > [foo, bar],
         create_array = (
             keyword("array")("op")
-            + Optional(LT.suppress() + column_type("type") + GT.suppress())
+            + Optional(LT.suppress() + column_type("type") / to_flat_column_type + GT.suppress())
             + (
                 LB + (query | delimited_list(Group(expression)))("args") + RB
                 | LK + Optional(delimited_list(Group(expression))("args")) + RK

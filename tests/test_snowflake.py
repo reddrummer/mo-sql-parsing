@@ -10,11 +10,12 @@
 
 from unittest import TestCase
 
-from mo_parsing.debug import Debugger
+from mo_testing.fuzzytestcase import add_error_reporting
 
 from mo_sql_parsing import parse, normal_op
 
 
+@add_error_reporting
 class TestSnowflake(TestCase):
     def test_issue_101_create_temp_table(self):
         sql = """CREATE TEMP TABLE foo(a varchar(10))"""
