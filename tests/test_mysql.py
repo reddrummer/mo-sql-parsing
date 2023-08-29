@@ -9,11 +9,12 @@
 
 from unittest import TestCase
 
-from mo_parsing.debug import Debugger
+from mo_testing.fuzzytestcase import add_error_reporting
 
-from mo_sql_parsing import parse, parse_mysql, normal_op, format
+from mo_sql_parsing import parse, parse_mysql
 
 
+@add_error_reporting
 class TestMySql(TestCase):
     def test_issue_22(self):
         sql = 'SELECT "fred"'
@@ -473,16 +474,18 @@ class TestMySql(TestCase):
         expected = {"create table": {
             "columns": [
                 {
+                    "character_set": "utf8mb4",
                     "collate": "utf8mb4_bin",
                     "comment": {"literal": "name"},
                     "name": "name",
-                    "type": {"varchar": 32, "character_set": "utf8mb4"},
+                    "type": {"varchar": 32},
                 },
                 {
+                    "character_set": "utf8",
                     "collate": "utf8_bin",
                     "comment": {"literal": "class"},
                     "name": "class",
-                    "type": {"varchar": 32, "character_set": "utf8"},
+                    "type": {"varchar": 32},
                 },
             ],
             "name": "student",
@@ -820,7 +823,6 @@ class TestMySql(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_199_convert6(self):
-        with Debugger():
             sql = "SELECT CONVERT('test', CHAR CHARACTER SET utf8) COLLATE utf8_bin"
             result = parse(sql)
             expected = {"select": {"value": {"collate": [

@@ -227,7 +227,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         # ARRAY < STRING > [foo, bar],
         create_array = (
             keyword("array")("op")
-            + Optional(LT.suppress() + column_type("type") + GT.suppress())
+            + Optional(LT.suppress() + column_type("type") / to_flat_column_type + GT.suppress())
             + (
                 LB + (query | delimited_list(Group(expression)))("args") + RB
                 | LK + Optional(delimited_list(Group(expression))("args")) + RK

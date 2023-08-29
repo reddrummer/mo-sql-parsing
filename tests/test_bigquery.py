@@ -9,12 +9,12 @@
 
 from unittest import TestCase, skip
 
-from mo_parsing.debug import Debugger
-from mo_testing.fuzzytestcase import FuzzyTestCase
+from mo_testing.fuzzytestcase import FuzzyTestCase, add_error_reporting
 
 from mo_sql_parsing import parse_bigquery as parse
 
 
+@add_error_reporting
 class TestBigQuery(TestCase):
 
     maxDiff = None

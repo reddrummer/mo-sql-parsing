@@ -11,7 +11,7 @@ import ast
 import sys
 
 from mo_dots import is_data, is_null, Data, from_data, literal_field, unliteral_field
-from mo_future import text, number_types, binary_type, flatten
+from mo_future import text, number_types, binary_type, flatten, first
 from mo_imports import expect
 from mo_parsing import *
 from mo_parsing import whitespaces
@@ -350,6 +350,20 @@ def to_json_call(tokens):
 
 def to_option(tokens):
     return dict([list(tokens)])
+
+
+def to_flat_column_type(tokens):
+    """
+    Unfortunate that we have to do this, but column properties are flattened
+    """
+    try:
+        col_desc = dict(tokens)
+        kwargs = listwrap(col_desc["type"])[0].kwargs
+        col_desc['character_set'] = kwargs['character_set']
+        del kwargs['character_set']
+        return col_desc
+    except Exception:
+        return tokens
 
 
 def to_interval_type(tokens):

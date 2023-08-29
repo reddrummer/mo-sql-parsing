@@ -10,9 +10,12 @@
 
 from unittest import TestCase
 
+from mo_testing.fuzzytestcase import add_error_reporting
+
 from mo_sql_parsing import parse
 
 
+@add_error_reporting
 class TestCreateSimple(TestCase):
     maxDiff = None
 
