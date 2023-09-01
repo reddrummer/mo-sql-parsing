@@ -596,6 +596,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 | assign("checksum", EQ + int_num)
             )
             + Optional(AS.suppress() + infix_notation(query, [])("query"))
+            + Optional(CLUSTER_BY.suppress() + LB + delimited_list(identifier) + RB)("cluster_by")
         )("create table")
 
         create_view = (
