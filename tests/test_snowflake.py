@@ -934,3 +934,23 @@ class TestSnowflake(TestCase):
         result = parse(sql)
         expected = {"copy": {"from": "my_schema.my_table", "into": {"literal": "@my_stage/path"}, "overwrite": True}}
         self.assertEqual(result, expected)
+
+    def test_issue_201_create_table_cluster_key(self):
+        sql = """CREATE TABLE foo(a varchar(10)) CLUSTER BY ( a )"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": {"name": "a", "type": {"varchar": 10}},
+            "name": "foo",
+            "cluster_by": "a"}
+        }
+        self.assertEqual(result, expected)
+
+    def test_issue_201_create_table_cluster_key_composite(self):
+        sql = """CREATE TABLE foo(a varchar(10), b int) CLUSTER BY ( a, b )"""
+        result = parse(sql)
+        expected = {"create table": {
+            "columns": [{"name": "a", "type": {"varchar": 10}}, {"name": "b", "type": {"int": {}}}],
+            "name": "foo",
+            "cluster_by": ["a", "b"]}
+        }
+        self.assertEqual(result, expected)
