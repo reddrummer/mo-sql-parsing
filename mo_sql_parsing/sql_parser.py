@@ -78,7 +78,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Group(Keyword(c, caseless=True)("op") + LB + expression("params") + Optional(AS | comma) + column_type("params") + RB)
                 / to_json_call
             )
-            for c in ["cast", "safe_cast", "try_cast", "convert"]
+            for c in ["cast", "safe_cast", "try_cast", "validate_conversion", "convert"]
         ])
 
         substring = (
