@@ -1447,3 +1447,11 @@ class TestSimple(TestCase):
 
         result = parse(sql)
         self.assertEqual(result, expected)
+
+    def test_issue_203(self):
+        sql = """select emp_id, sep_id, programid,
+            row_number() over( partition by emp_id order by sep_id desc) as ord
+            from bidg_1.crs_fact"""
+        expected = {}
+        result = parse(sql)
+        self.assertEqual(result, expected)
