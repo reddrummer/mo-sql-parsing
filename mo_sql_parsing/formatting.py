@@ -409,6 +409,9 @@ class Formatter:
     def _try_cast(self, json, prec):
         return self.casting("TRY_CAST", json)
 
+    def _validate_conversion(self, json, prec):
+        return self.casting("VALIDATE_CONVERSION", json)
+
     def _safe_cast(self, json, prec):
         return self.casting("SAFE_CAST", json)
 
