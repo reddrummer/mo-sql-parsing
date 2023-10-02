@@ -1452,6 +1452,19 @@ class TestSimple(TestCase):
         sql = """select emp_id, sep_id, programid,
             row_number() over( partition by emp_id order by sep_id desc) as ord
             from bidg_1.crs_fact"""
-        expected = {}
+        expected = {
+            "from": "bidg_1.crs_fact",
+            "select": [
+                {"value": "emp_id"},
+                {"value": "sep_id"},
+                {"value": "programid"},
+                {
+                    "name": "ord",
+                    "over": {"orderby": {"sort": "desc", "value": "sep_id"}, "partitionby": "emp_id"},
+                    "value": {"row_number": {}},
+                }
+            ]
+        }
+
         result = parse(sql)
         self.assertEqual(result, expected)
