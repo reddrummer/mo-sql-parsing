@@ -1449,7 +1449,41 @@ class TestBigQuery(TestCase):
         result = parse(sql)
         expected = {"select": {
             "name": "year_month",
-            "value": {"cast": [{"date": [2023, 1, 1]},  {'string_format': {'literal': 'YYYY-MM'}}]}
+            "value": {"cast": [{"date": [2023, 1, 1]}, {"string_format": {"literal": "YYYY-MM"}}]},
         }}
+
+        self.assertEqual(result, expected)
+
+    def test_issue_206(self):
+        query = """
+        with raw_data as (
+           select 
+                  * 
+           from UNNEST(GENERATE_ARRAY(1, 2)) as col1,
+           UNNEST(GENERATE_ARRAY(10, 12)) as col2,
+           UNNEST(GENERATE_ARRAY(20, 22)) as col3
+        )
+        select 
+            * except(col3), 
+            col3 + col1 as new_col
+        from raw_data
+        """
+        result = parse(query)
+        expected = {
+            "from": "raw_data",
+            "select": {"name": "new_col", "value": {"add": ["col3", "col1"]}},
+            "select_except": {"value": "col3"},
+            "with": {
+                "name": "raw_data",
+                "value": {
+                    "from": [
+                        {"name": "col1", "value": {"unnest": {"generate_array": [1, 2]}}},
+                        {"name": "col2", "value": {"unnest": {"generate_array": [10, 12]}}},
+                        {"name": "col3", "value": {"unnest": {"generate_array": [20, 22]}}},
+                    ],
+                    "select": "*",
+                },
+            },
+        }
 
         self.assertEqual(result, expected)

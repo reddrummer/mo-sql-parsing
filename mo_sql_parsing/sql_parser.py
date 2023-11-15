@@ -398,7 +398,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
         )
 
         selection = (
-            ((SELECT + "*" + EXCEPT.suppress()) + (LB + delimited_list(select_column)("select_except") + RB))
+            (SELECT + "*" + EXCEPT.suppress()) + (LB + delimited_list(select_column)("select_except") + RB)
+            + Optional(comma + delimited_list(select_column)("select"))
             | (SELECT + DISTINCT + ON)
             + (LB + delimited_list(select_column)("distinct_on") + RB)
             + delimited_list(select_column)("select")
