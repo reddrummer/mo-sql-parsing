@@ -610,10 +610,19 @@ def to_map(tokens):
     return Call("create_map", [keys, values], {})
 
 
+def _simpler_struct_value(v):
+    try:
+        v=v[0]
+        if len(v) == 1 and "value" in v:
+            return v["value"]
+        return v
+    except:
+        return v
+
+
 def to_struct(tokens):
     types = list(tokens["types"])
-    args = list(d for a in tokens["args"] for d in [a if a["name"] else a["value"]])
-
+    args = list(_simpler_struct_value(a) for a in tokens["args"])
     output = Call("create_struct", args, {})
     if types:
         output = Call("cast", [output, Call("struct", types, {})], {})
@@ -625,11 +634,15 @@ def to_select_call(tokens):
     if expr == "*":
         return ["*"]
     try:
-        call = expr[0][0]
+        call = expr[0][0]  # expecting a forward from the expression
         if call.op == "value":
             return {"name": tokens["name"], "value": call.args, **call.kwargs}
+        return tokens
     except:
-        pass
+        name = tokens["name"]
+        if not name:
+            return tokens
+        return {"name": name, "value": expr}
 
 
 def to_union_call(tokens):

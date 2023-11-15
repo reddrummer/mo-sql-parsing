@@ -134,6 +134,36 @@ class TestBigQuery(TestCase):
         expected = {"select": {"name": "min", "value": {"percentile_disc": ["x", 0]}, "over": {}}}
         self.assertEqual(result, expected)
 
+    def testI_simple(self):
+        sql = """
+             SELECT
+                [
+                    STRUCT(
+                        " 00:00:00 UTC" as hrs,
+                        GENERATE_DATE_ARRAY('2016-01-01', current_date(), INTERVAL 1 DAY) as dt_range
+                    )
+                ] AS full_timestamps
+            """
+        result = parse(sql)
+        expected = {
+                "select": {
+                    "name": "full_timestamps",
+                    "value": {"create_array":
+                        {"create_struct": [
+                            {"name": "hrs", "value": {"literal": " 00:00:00 UTC"}},
+                            {
+                                "name": "dt_range",
+                                "value": {"generate_date_array": [
+                                    {"literal": "2016-01-01"},
+                                    {"current_date": {}},
+                                    {"interval": [1, "day"]},
+                                ]},
+                            },
+                        ]},
+                    },
+                }}
+        self.assertEqual(result, expected)
+
     def testI(self):
         sql = """
             WITH date_hour_slots AS (
@@ -1486,4 +1516,10 @@ class TestBigQuery(TestCase):
             },
         }
 
+        self.assertEqual(result, expected)
+
+    def test_issue_207(self):
+        query = """select struct('a' as col1) as cc"""
+        result = parse(query)
+        expected = {"select": {"name": "cc", "value": {"create_struct": {"name": "col1", "value": {"literal": "a"}}}}}
         self.assertEqual(result, expected)

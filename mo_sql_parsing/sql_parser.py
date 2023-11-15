@@ -242,11 +242,13 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         create_map = (keyword("map") + LK + expression("keys") + "," + expression("values") + RK) / to_map
 
+        select_column = Group(expression("value") + alias | Literal("*")("value")) / to_select_call
+
         create_struct = (
             keyword("struct")("op")
             + Optional(LT.suppress() + delimited_list(column_type)("types") + GT.suppress())
             + LB
-            + delimited_list(Group((expression("value") + alias) / to_select_call))("args")
+            + delimited_list(select_column)("args")
             + RB
         ) / to_struct
 
@@ -350,8 +352,6 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 )
             )("value").set_parser_name("expression")
         )
-
-        select_column = Group(expression("value") + alias | Literal("*")("value")) / to_select_call
 
         table_source = Forward()
 
