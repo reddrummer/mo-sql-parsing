@@ -199,6 +199,11 @@ def get_column_type(expr, identifier, literal_string):
     column_definition = Forward()
     column_type = Forward()
 
+    # eg  AS STRING FORMAT 'YYYY-MM'
+    string_type = (
+        keyword("string format")("op") + literal_string("params")
+    )/ to_json_call
+
     struct_type = (
         keyword("struct")("op") + LT.suppress() + Group(delimited_list(column_definition))("params") + GT.suppress()
     ) / to_json_call
@@ -213,7 +218,7 @@ def get_column_type(expr, identifier, literal_string):
         )
     ) / to_json_call
 
-    column_type << (struct_type | row_type | array_type | simple_types)("type") + Optional(
+    column_type << (struct_type | row_type | array_type | string_type | simple_types)("type") + Optional(
         AS + LB + expr("value") + RB
     )
 

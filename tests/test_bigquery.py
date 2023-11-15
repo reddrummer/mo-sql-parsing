@@ -16,7 +16,6 @@ from mo_sql_parsing import parse_bigquery as parse
 
 @add_error_reporting
 class TestBigQuery(TestCase):
-
     maxDiff = None
 
     def test_with_expression(self):
@@ -1442,5 +1441,15 @@ class TestBigQuery(TestCase):
                 }},
             ],
         }
+
+        self.assertEqual(result, expected)
+
+    def test_issue_205(self):
+        sql = """select CAST(date(2023,1,1) AS STRING FORMAT 'YYYY-MM') AS year_month"""
+        result = parse(sql)
+        expected = {"select": {
+            "name": "year_month",
+            "value": {"cast": [{"date": [2023, 1, 1]},  {'string_format': {'literal': 'YYYY-MM'}}]}
+        }}
 
         self.assertEqual(result, expected)
