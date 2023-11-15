@@ -478,6 +478,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Optional(WITH + LB + keyword("nolock")("hint") + RB),
                 Optional(WITH + OFFSET + Optional(AS) + ident("with_offset")),
                 Optional(tablesample),
+                Optional(assign("for system_time as of", expression)),
                 alias,
             ])
         ) / to_table

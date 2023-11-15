@@ -145,23 +145,22 @@ class TestBigQuery(TestCase):
                 ] AS full_timestamps
             """
         result = parse(sql)
-        expected = {
-                "select": {
-                    "name": "full_timestamps",
-                    "value": {"create_array":
-                        {"create_struct": [
-                            {"name": "hrs", "value": {"literal": " 00:00:00 UTC"}},
-                            {
-                                "name": "dt_range",
-                                "value": {"generate_date_array": [
-                                    {"literal": "2016-01-01"},
-                                    {"current_date": {}},
-                                    {"interval": [1, "day"]},
-                                ]},
-                            },
+        expected = {"select": {
+            "name": "full_timestamps",
+            "value": {
+                "create_array": {"create_struct": [
+                    {"name": "hrs", "value": {"literal": " 00:00:00 UTC"}},
+                    {
+                        "name": "dt_range",
+                        "value": {"generate_date_array": [
+                            {"literal": "2016-01-01"},
+                            {"current_date": {}},
+                            {"interval": [1, "day"]},
                         ]},
                     },
-                }}
+                ]},
+            },
+        }}
         self.assertEqual(result, expected)
 
     def testI(self):
@@ -1522,4 +1521,20 @@ class TestBigQuery(TestCase):
         query = """select struct('a' as col1) as cc"""
         result = parse(query)
         expected = {"select": {"name": "cc", "value": {"create_struct": {"name": "col1", "value": {"literal": "a"}}}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_208(self):
+        # https://cloud.google.com/bigquery/docs/access-historical-data#query_data_at_a_point_in_time
+        sql = """SELECT *
+        FROM `mydataset.mytable`
+          FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR);
+        """
+        result = parse(sql)
+        expected = {
+            "from": {
+                "for_system_time_as_of": {"timestamp_sub": [{"current_timestamp": {}}, {"interval": [1, "hour"]}]},
+                "value": "mydataset..mytable",
+            },
+            "select": "*",
+        }
         self.assertEqual(result, expected)
