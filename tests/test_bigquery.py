@@ -16,7 +16,6 @@ from mo_sql_parsing import parse_bigquery as parse
 
 @add_error_reporting
 class TestBigQuery(TestCase):
-
     maxDiff = None
 
     def test_with_expression(self):
@@ -133,6 +132,35 @@ class TestBigQuery(TestCase):
         sql = """SELECT PERCENTILE_DISC(x, 0) OVER() AS min"""
         result = parse(sql)
         expected = {"select": {"name": "min", "value": {"percentile_disc": ["x", 0]}, "over": {}}}
+        self.assertEqual(result, expected)
+
+    def testI_simple(self):
+        sql = """
+             SELECT
+                [
+                    STRUCT(
+                        " 00:00:00 UTC" as hrs,
+                        GENERATE_DATE_ARRAY('2016-01-01', current_date(), INTERVAL 1 DAY) as dt_range
+                    )
+                ] AS full_timestamps
+            """
+        result = parse(sql)
+        expected = {"select": {
+            "name": "full_timestamps",
+            "value": {
+                "create_array": {"create_struct": [
+                    {"name": "hrs", "value": {"literal": " 00:00:00 UTC"}},
+                    {
+                        "name": "dt_range",
+                        "value": {"generate_date_array": [
+                            {"literal": "2016-01-01"},
+                            {"current_date": {}},
+                            {"interval": [1, "day"]},
+                        ]},
+                    },
+                ]},
+            },
+        }}
         self.assertEqual(result, expected)
 
     def testI(self):
@@ -1443,4 +1471,70 @@ class TestBigQuery(TestCase):
             ],
         }
 
+        self.assertEqual(result, expected)
+
+    def test_issue_205(self):
+        sql = """select CAST(date(2023,1,1) AS STRING FORMAT 'YYYY-MM') AS year_month"""
+        result = parse(sql)
+        expected = {"select": {
+            "name": "year_month",
+            "value": {"cast": [{"date": [2023, 1, 1]}, {"string_format": {"literal": "YYYY-MM"}}]},
+        }}
+
+        self.assertEqual(result, expected)
+
+    def test_issue_206(self):
+        query = """
+        with raw_data as (
+           select 
+                  * 
+           from UNNEST(GENERATE_ARRAY(1, 2)) as col1,
+           UNNEST(GENERATE_ARRAY(10, 12)) as col2,
+           UNNEST(GENERATE_ARRAY(20, 22)) as col3
+        )
+        select 
+            * except(col3), 
+            col3 + col1 as new_col
+        from raw_data
+        """
+        result = parse(query)
+        expected = {
+            "from": "raw_data",
+            "select": {"name": "new_col", "value": {"add": ["col3", "col1"]}},
+            "select_except": {"value": "col3"},
+            "with": {
+                "name": "raw_data",
+                "value": {
+                    "from": [
+                        {"name": "col1", "value": {"unnest": {"generate_array": [1, 2]}}},
+                        {"name": "col2", "value": {"unnest": {"generate_array": [10, 12]}}},
+                        {"name": "col3", "value": {"unnest": {"generate_array": [20, 22]}}},
+                    ],
+                    "select": "*",
+                },
+            },
+        }
+
+        self.assertEqual(result, expected)
+
+    def test_issue_207(self):
+        query = """select struct('a' as col1) as cc"""
+        result = parse(query)
+        expected = {"select": {"name": "cc", "value": {"create_struct": {"name": "col1", "value": {"literal": "a"}}}}}
+        self.assertEqual(result, expected)
+
+    def test_issue_208(self):
+        # https://cloud.google.com/bigquery/docs/access-historical-data#query_data_at_a_point_in_time
+        sql = """SELECT *
+        FROM `mydataset.mytable`
+          FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR);
+        """
+        result = parse(sql)
+        expected = {
+            "from": {
+                "for_system_time_as_of": {"timestamp_sub": [{"current_timestamp": {}}, {"interval": [1, "hour"]}]},
+                "value": "mydataset..mytable",
+            },
+            "select": "*",
+        }
         self.assertEqual(result, expected)

@@ -280,6 +280,7 @@ precedence = {
     "interval": 0,
     "cast": 0,
     "try_cast": 0,
+    "validate_conversion": 0,
     "collate": 0,
     "concat": 1,
     "mul": 2,

@@ -78,7 +78,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Group(Keyword(c, caseless=True)("op") + LB + expression("params") + Optional(AS | comma) + column_type("params") + RB)
                 / to_json_call
             )
-            for c in ["cast", "safe_cast", "try_cast", "convert"]
+            for c in ["cast", "safe_cast", "try_cast", "validate_conversion", "convert"]
         ])
 
         substring = (
@@ -242,11 +242,13 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         create_map = (keyword("map") + LK + expression("keys") + "," + expression("values") + RK) / to_map
 
+        select_column = Group(expression("value") + alias | Literal("*")("value")) / to_select_call
+
         create_struct = (
             keyword("struct")("op")
             + Optional(LT.suppress() + delimited_list(column_type)("types") + GT.suppress())
             + LB
-            + delimited_list(Group((expression("value") + alias) / to_select_call))("args")
+            + delimited_list(select_column)("args")
             + RB
         ) / to_struct
 
@@ -351,8 +353,6 @@ def parser(literal_string, simple_ident, sqlserver=False):
             )("value").set_parser_name("expression")
         )
 
-        select_column = Group(expression("value") + alias | Literal("*")("value")) / to_select_call
-
         table_source = Forward()
 
         pivot_join = (
@@ -398,7 +398,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
         )
 
         selection = (
-            ((SELECT + "*" + EXCEPT.suppress()) + (LB + delimited_list(select_column)("select_except") + RB))
+            (SELECT + "*" + EXCEPT.suppress()) + (LB + delimited_list(select_column)("select_except") + RB)
+            + Optional(comma + delimited_list(select_column)("select"))
             | (SELECT + DISTINCT + ON)
             + (LB + delimited_list(select_column)("distinct_on") + RB)
             + delimited_list(select_column)("select")
@@ -477,6 +478,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
                 Optional(WITH + LB + keyword("nolock")("hint") + RB),
                 Optional(WITH + OFFSET + Optional(AS) + ident("with_offset")),
                 Optional(tablesample),
+                Optional(assign("for system_time as of", expression)),
                 alias,
             ])
         ) / to_table
