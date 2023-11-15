@@ -745,6 +745,12 @@ class TestSimple(TestCase):
         formatted = format(parse(sql))
         self.assertEqual(formatted, sql)
 
+    def test_validate_conversion_format_back(self):
+        sql = """SELECT VALIDATE_CONVERSION(a AS DECIMAL(10, 3)) FROM b.c"""
+        result = parse(sql)
+        formatted = format(parse(sql))
+        self.assertEqual(formatted, sql)
+
     def test_subquery_as_param_format_back(self):
         sql = """SELECT DATEDIFF(mm, col2, (SELECT MAX(col) FROM dbo.table)) AS A FROM be"""
         result = parse(sql)
