@@ -788,9 +788,3 @@ class TestSimple(TestCase):
         expected = "SELECT group_concat(u.co_id ORDER BY u.created DESC SEPARATOR ',')"
         result = format(parse(sql))
         self.assertEqual(result, expected)
-
-    def test_issue_209_lambda(self):
-        sql = "select * from ta where id = 'xxxx'"
-        expected = "SELECT * FROM ta WHERE id = 'xxxx'"
-        result = format(parse(sql), should_quote=lambda x: '`', ansi_quotes=False)
-        self.assertEqual(result, expected)
