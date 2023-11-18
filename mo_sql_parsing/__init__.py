@@ -84,10 +84,16 @@ def _parse(parser, sql, null, calls):
     return output
 
 
-def format(json, **kwargs):
+def format(json, ansi_quotes=True, should_quote=None):
+    """
+    :param json:  Parsed SQL as json
+    :param ansi_quotes: True if identifiers can be put in double quotes
+    :param should_quote: Function that returns True if a string should be quoted (because contains spaces, etc)
+    :return: SQL string
+    """
     from mo_sql_parsing.formatting import Formatter
 
-    return Formatter(**kwargs).dispatch(json)
+    return Formatter(ansi_quotes, should_quote).dispatch(json)
 
 
 _ = json.dumps
