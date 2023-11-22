@@ -1538,3 +1538,19 @@ class TestBigQuery(TestCase):
             "select": "*",
         }
         self.assertEqual(result, expected)
+
+    def test_issue_210(self):
+        # https://cloud.google.com/bigquery/docs/access-historical-data#query_data_at_a_point_in_time
+        sql = """SELECT *
+        FROM `mydataset.mytable`
+          FOR SYSTEM TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR);
+        """
+        result = parse(sql)
+        expected = {
+            "from": {
+                "for_system_time_as_of": {"timestamp_sub": [{"current_timestamp": {}}, {"interval": [1, "hour"]}]},
+                "value": "mydataset..mytable",
+            },
+            "select": "*",
+        }
+        self.assertEqual(result, expected)
