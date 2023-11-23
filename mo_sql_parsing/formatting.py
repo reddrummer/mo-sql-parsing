@@ -29,7 +29,7 @@ def is_keyword(identifier):
         return False
 
 
-def should_quote(identifier):
+def _should_quote(identifier):
     """
     Return true if a given identifier should be quoted.
 
@@ -43,7 +43,7 @@ def should_quote(identifier):
     return identifier != "*" and (not VALID.match(identifier) or is_keyword(identifier))
 
 
-def escape(ident, ansi_quotes, should_quote):
+def escape(ident, quote_char, should_quote):
     """
     Escape identifiers.
 
@@ -55,9 +55,8 @@ def escape(ident, ansi_quotes, should_quote):
         if not should_quote(identifier):
             return identifier
 
-        quote = '"' if ansi_quotes else "`"
-        identifier = identifier.replace(quote, 2 * quote)
-        return "{0}{1}{2}".format(quote, identifier, quote)
+        identifier = identifier.replace(quote_char, 2 * quote_char)
+        return f"{quote_char}{identifier}{quote_char}"
 
     return ".".join(esc(f) for f in split_field(ident))
 
@@ -157,9 +156,9 @@ class Formatter:
     _minus = Operator("minus")
     _except = Operator("except")
 
-    def __init__(self, ansi_quotes=True, should_quote=should_quote):
-        self.ansi_quotes = ansi_quotes
-        self.should_quote = should_quote
+    def __init__(self, ansi_quotes=True, should_quote=None):
+        self.quote_char = '"' if ansi_quotes else '`'
+        self.should_quote = should_quote or _should_quote
 
     def format(self, json):
         return self.dispatch(json, 50)
@@ -195,7 +194,7 @@ class Formatter:
             else:
                 return self.op(json, prec)
         if isinstance(json, string_types):
-            return escape(json, self.ansi_quotes, self.should_quote)
+            return escape(json, self.quote_char, self.should_quote)
         if json == None:
             return "NULL"
 
