@@ -421,15 +421,22 @@ class Formatter:
         return f"EXTRACT({i} FROM {v})"
 
     def _interval(self, json, prec):
-        amount = self.dispatch(json[0], precedence["and"])
-        type = self.dispatch(json[1], precedence["and"])
-        return f"INTERVAL '{amount}' {type.upper()}"
+        amount, type = json
+        if isinstance(amount, (int, float)):
+            # we can quote numbers and the various dbs are fine with that
+            amount = f"'{amount}'"
+        else:
+            amount = self.dispatch(amount, precedence["interval"])
+        type = self.dispatch(type, precedence["and"])
+        return f"INTERVAL {amount} {type.upper()}"
 
     def _literal(self, json, prec=0):
         if isinstance(json, list):
-            return "({0})".format(", ".join(self._literal(v, precedence["literal"]) for v in json))
+            body = ", ".join(self._literal(v, precedence["literal"]) for v in json)
+            return f"({body})"
         elif isinstance(json, string_types):
-            return "'{0}'".format(json.replace("'", "''"))
+            body = json.replace("'", "''")
+            return f"'{body}'"
         else:
             return str(json)
 
