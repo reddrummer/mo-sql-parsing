@@ -558,7 +558,32 @@ class TestSimple(TestCase):
 
     def test_issue_51_interval(self):
         result = format(parse("select now() + interval 2 week"))
-        expected = "SELECT NOW() + INTERVAL 2 WEEK"
+        expected = "SELECT NOW() + INTERVAL '2' WEEK"
+        self.assertEqual(result, expected)
+
+    def test_issue_51_interval_string(self):
+        result = format(parse("select now() + interval '2' week"))
+        expected = "SELECT NOW() + INTERVAL '2' WEEK"
+        self.assertEqual(result, expected)
+
+    def test_issue_51_interval_string2(self):
+        result = format(parse("select now() + interval '2 week'"))
+        expected = "SELECT NOW() + INTERVAL '2' WEEK"
+        self.assertEqual(result, expected)
+
+    def test_issue_51_interval_string3(self):
+        result = format(parse("select now() + interval '1.5' second"))
+        expected = "SELECT NOW() + INTERVAL '1.5' SECOND"
+        self.assertEqual(result, expected)
+
+    def test_issue_51_interval_float(self):
+        result = format(parse("select now() + interval 1.5 second"))
+        expected = "SELECT NOW() + INTERVAL '1.5' SECOND"
+        self.assertEqual(result, expected)
+
+    def test_issue_51_interval_expression(self):
+        result = format(parse("select now() + interval (1+1) week"))
+        expected = "SELECT NOW() + INTERVAL (1 + 1) WEEK"
         self.assertEqual(result, expected)
 
     def test_issue_65_parenthesis(self):

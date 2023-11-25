@@ -170,7 +170,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
             + Optional(":" + int_pos("second") + Optional("." + int_pos("fraction"))),
             ago + ":" + int_pos("minute") + Optional(":" + int_pos("second") + Optional("." + int_pos("fraction"))),
             ago + int_pos("minute") + ":" + int_pos("second") + Optional("." + int_pos("fraction")),
-            (int_num | real_num)("expr"),
+            (real_num | int_num)("expr"),
         ])
 
         formatted_duration = Regex("[@Pp]*") + (delimited_list(
