@@ -423,7 +423,7 @@ class Formatter:
     def _interval(self, json, prec):
         amount = self.dispatch(json[0], precedence["and"])
         type = self.dispatch(json[1], precedence["and"])
-        return f"INTERVAL {amount} {type.upper()}"
+        return f"INTERVAL '{amount}' {type.upper()}"
 
     def _literal(self, json, prec=0):
         if isinstance(json, list):

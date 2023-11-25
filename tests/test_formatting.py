@@ -558,7 +558,7 @@ class TestSimple(TestCase):
 
     def test_issue_51_interval(self):
         result = format(parse("select now() + interval 2 week"))
-        expected = "SELECT NOW() + INTERVAL 2 WEEK"
+        expected = "SELECT NOW() + INTERVAL '2' WEEK"
         self.assertEqual(result, expected)
 
     def test_issue_65_parenthesis(self):
