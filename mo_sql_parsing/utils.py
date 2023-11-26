@@ -727,6 +727,12 @@ def to_table(tokens):
     return [output["value"]]
 
 
+def single_nliteral(tokens):
+    val = tokens[0]
+    val = '"""' + val[2:-1].replace("''", "\\'").replace('"', '\\"') + '"""'
+    return {"nliteral": ast.literal_eval(val)}
+
+
 def single_literal(tokens):
     val = tokens[0]
     val = '"""' + val[1:-1].replace("''", "\\'").replace('"', '\\"') + '"""'
@@ -808,6 +814,7 @@ hex_num = Regex(r"0x[0-9a-fA-F]+").set_parser_name("hex") / (lambda t: {"hex": t
 
 # STRINGS
 ansi_string = Regex(r"\'(\'\'|[^'])*\'") / single_literal
+n_string = Regex(r"[nN]?\'(\'\'|[^'])*\'") / single_nliteral
 regex_string = (Regex(r'r\"(\\\"|[^"])*\"') | Regex(r"r\'(\\\'|[^'])*\'")) / literal_regex
 mysql_doublequote_string = Regex(r'\"(\"\"|[^"])*\"') / double_literal
 

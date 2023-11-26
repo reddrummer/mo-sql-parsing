@@ -14,7 +14,7 @@ from threading import Lock
 from mo_parsing import debug
 
 from mo_sql_parsing.sql_parser import scrub
-from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
+from mo_sql_parsing.utils import ansi_string, simple_op, normal_op, n_string
 
 parse_locker = Lock()  # ENSURE ONLY ONE PARSING AT A TIME
 common_parser = None

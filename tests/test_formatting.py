@@ -10,7 +10,7 @@
 
 from unittest import TestCase
 
-from mo_sql_parsing import format, parse
+from mo_sql_parsing import format, parse, parse_sqlserver
 
 
 class TestSimple(TestCase):
@@ -813,3 +813,9 @@ class TestSimple(TestCase):
         expected = "SELECT group_concat(u.co_id ORDER BY u.created DESC SEPARATOR ',')"
         result = format(parse(sql))
         self.assertEqual(result, expected)
+
+
+    def test_nliteral_format(self):
+        sql = "SELECT * FROM dbo.table WHERE a = N'Something'"
+        result = format(parse_sqlserver(sql))
+        self.assertEqual(result, sql)
