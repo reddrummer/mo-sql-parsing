@@ -1554,3 +1554,43 @@ class TestBigQuery(TestCase):
             "select": "*",
         }
         self.assertEqual(result, expected)
+
+    def test_issue_215(self):
+        sql = """
+            select 
+                col3 + col1 as new_col,
+                * except(col3)
+            from raw_data
+        """
+        result = parse(sql)
+        expected = {
+            "from": "raw_data",
+            "select": {"name": "new_col", "value": {"add": ["col3", "col1"]}},
+            "select_except": {"value":"col3"},
+        }
+        self.assertEqual(result, expected)
+
+    @skip("TODO")
+    def test_issue_216(self):
+        sql = """
+            with raw_data as (
+            select 
+                    * 
+            from UNNEST(GENERATE_ARRAY(1, 2)) as col1
+            ),
+            raw_data2 as (
+            select 
+            *, 
+            1 as cn1, 
+            2 as cn2, 
+            from UNNEST(GENERATE_ARRAY(1, 2)) as col2
+            )
+            select 
+                *
+            from raw_data
+            left join raw_data2 on raw_data.col1 = raw_data2.col2, unnest ([raw_data2.cn1, raw_data2.cn2]) as unnested_res
+        """
+        result = parse(sql)
+        expected = {}
+        self.assertEqual(result, expected)
+

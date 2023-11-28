@@ -242,7 +242,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         create_map = (keyword("map") + LK + expression("keys") + "," + expression("values") + RK) / to_map
 
-        select_column = Group(expression("value") + alias | Literal("*")("value")) / to_select_call
+        select_column = Group(Literal("*")("value") | expression("value") + alias) / to_select_call
 
         create_struct = (
             keyword("struct")("op")
@@ -289,7 +289,6 @@ def parser(literal_string, simple_ident, sqlserver=False):
         )
 
         with NO_WHITESPACE:
-
             def scale(tokens):
                 return {"mul": [tokens[0], tokens[1]]}
 
@@ -397,16 +396,14 @@ def parser(literal_string, simple_ident, sqlserver=False):
             / to_top_clause
         )
 
+        except_columns = "*" + EXCEPT.suppress() + LB + delimited_list(select_column)("select_except") + RB
         selection = (
-            (SELECT + "*" + EXCEPT.suppress()) + (LB + delimited_list(select_column)("select_except") + RB)
-            + Optional(comma + delimited_list(select_column)("select"))
-            | (SELECT + DISTINCT + ON)
-            + (LB + delimited_list(select_column)("distinct_on") + RB)
+            (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)
             + delimited_list(select_column)("select")
             | assign("select distinct", delimited_list(select_column))
             | assign("select as struct", delimited_list(select_column))
             | assign("select as value", delimited_list(select_column))
-            | SELECT + tops + delimited_list(select_column)("select")
+            | SELECT + tops + delimited_list(except_columns | Many(select_column, exact=1)("select"))
         ) + comma
 
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
