@@ -459,7 +459,7 @@ class TestBigQuery(TestCase):
 
     def test_issue_99_select_except(self):
         result = parse("SELECT * EXCEPT(x) FROM `a.b.c`")
-        expected = {"from": "a..b..c", "select_except": {"value": "x"}}
+        expected = {"from": "a..b..c", "select":{"all_columns":{}, "except": "x"}}
         self.assertEqual(result, expected)
 
     def test_unnest(self):
@@ -1500,8 +1500,10 @@ class TestBigQuery(TestCase):
         result = parse(query)
         expected = {
             "from": "raw_data",
-            "select": {"name": "new_col", "value": {"add": ["col3", "col1"]}},
-            "select_except": {"value": "col3"},
+            "select": [
+                {"all_columns": {}, "except": "col3"},
+                {"name": "new_col", "value": {"add": ["col3", "col1"]}},
+            ],
             "with": {
                 "name": "raw_data",
                 "value": {
@@ -1555,6 +1557,23 @@ class TestBigQuery(TestCase):
         }
         self.assertEqual(result, expected)
 
+    def test_issue_214(self):
+        sql = """
+            select 
+                raw_data.* except(col3),
+                col3 + col1 as new_col
+            from raw_data
+        """
+        result = parse(sql)
+        expected = {
+            "from": "raw_data",
+            "select": [
+                {"all_columns": {"from": "raw_data"}, "except": "col3"},
+                {"name": "new_col", "value": {"add": ["col3", "col1"]}},
+            ],
+        }
+        self.assertEqual(result, expected)
+
     def test_issue_215(self):
         sql = """
             select 
@@ -1565,8 +1584,7 @@ class TestBigQuery(TestCase):
         result = parse(sql)
         expected = {
             "from": "raw_data",
-            "select": {"name": "new_col", "value": {"add": ["col3", "col1"]}},
-            "select_except": {"value":"col3"},
+            "select": [{"name": "new_col", "value": {"add": ["col3", "col1"]}}, {"all_columns": {}, "except": "col3"}],
         }
         self.assertEqual(result, expected)
 
@@ -1593,4 +1611,3 @@ class TestBigQuery(TestCase):
         result = parse(sql)
         expected = {}
         self.assertEqual(result, expected)
-

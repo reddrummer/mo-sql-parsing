@@ -34,6 +34,12 @@ def sqlserver_parser():
     return parser(regex_string | ansi_string, atomic_ident, sqlserver=True)
 
 
+def bigquery_parser():
+    mysql_string = regex_string | ansi_string | mysql_doublequote_string
+    atomic_ident = ansi_ident | mysql_backtick_ident | simple_ident
+    return parser(mysql_string, atomic_ident)
+
+
 def parser(literal_string, simple_ident, sqlserver=False):
     debugger = debug.DEBUGGER or Null
     debugger.__exit__(None, None, None)
@@ -242,6 +248,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         create_map = (keyword("map") + LK + expression("keys") + "," + expression("values") + RK) / to_map
 
+        # select_column = Group(Literal("*")("all_columns")/{} | expression("value") + alias) / to_select_call
         select_column = Group(Literal("*")("value") | expression("value") + alias) / to_select_call
 
         create_struct = (
@@ -396,14 +403,17 @@ def parser(literal_string, simple_ident, sqlserver=False):
             / to_top_clause
         )
 
-        except_columns = "*" + EXCEPT.suppress() + LB + delimited_list(select_column)("select_except") + RB
+        except_columns = Group(
+            (ident("from") + ".*" | Literal("*")/{})("all_columns")
+            + EXCEPT.suppress() + LB + delimited_list(ident)("except") + RB
+        )
         selection = (
             (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)
             + delimited_list(select_column)("select")
             | assign("select distinct", delimited_list(select_column))
             | assign("select as struct", delimited_list(select_column))
             | assign("select as value", delimited_list(select_column))
-            | SELECT + tops + delimited_list(except_columns | Many(select_column, exact=1)("select"))
+            | SELECT + tops + delimited_list(except_columns | select_column)("select")
         ) + comma
 
         row = (LB + delimited_list(Group(expression)) + RB) / to_row

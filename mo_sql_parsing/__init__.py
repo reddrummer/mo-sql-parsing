@@ -20,6 +20,7 @@ parse_locker = Lock()  # ENSURE ONLY ONE PARSING AT A TIME
 common_parser = None
 mysql_parser = None
 sqlserver_parser = None
+bigquery_parser = None
 
 SQL_NULL = {"null": {}}
 
@@ -70,7 +71,19 @@ def parse_sqlserver(sql, null=SQL_NULL, calls=simple_op):
         return _parse(sqlserver_parser, sql, null, calls)
 
 
-parse_bigquery = parse_mysql
+def parse_bigquery(sql, null=SQL_NULL, calls=simple_op):
+    """
+    PARSE BigQuery ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
+    :param sql: String of SQL
+    :param null: What value to use as NULL (default is the null function `{"null":{}}`)
+    :return: parse tree
+    """
+    global bigquery_parser
+
+    with parse_locker:
+        if not bigquery_parser:
+            bigquery_parser = sql_parser.bigquery_parser()
+        return _parse(bigquery_parser, sql, null, calls)
 
 
 def _parse(parser, sql, null, calls):
