@@ -440,6 +440,16 @@ class Formatter:
         else:
             return str(json)
 
+    def _nliteral(self, json, prec=0):
+        if isinstance(json, list):
+            body = ", ".join(self._nliteral(v, precedence["nliteral"]) for v in json)
+            return f"({body})"
+        elif isinstance(json, string_types):
+            body = json.replace("'", "''")
+            return f"N'{body}'"
+        else:
+            return str(json)
+
     def _get(self, json, prec):
         v, i = json
         v_sql = self.dispatch(v, prec=precedence["literal"])
