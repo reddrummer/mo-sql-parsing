@@ -81,7 +81,14 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         casting = MatchFirst([
             (
-                Group(Keyword(c, caseless=True)("op") + LB + expression("params") + Optional(AS | comma) + column_type("params") + RB)
+                Group(
+                    Keyword(c, caseless=True)("op")
+                    + LB
+                    + expression("params")
+                    + Optional(AS | comma)
+                    + column_type("params")
+                    + RB
+                )
                 / to_json_call
             )
             for c in ["cast", "safe_cast", "try_cast", "validate_conversion", "convert"]
@@ -296,6 +303,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
         )
 
         with NO_WHITESPACE:
+
             def scale(tokens):
                 return {"mul": [tokens[0], tokens[1]]}
 
@@ -404,8 +412,11 @@ def parser(literal_string, simple_ident, sqlserver=False):
         )
 
         except_columns = Group(
-            (ident("from") + ".*" | Literal("*")/{})("all_columns")
-            + EXCEPT.suppress() + LB + delimited_list(ident)("except") + RB
+            (ident("from") + ".*" | Literal("*") / {})("all_columns")
+            + EXCEPT.suppress()
+            + LB
+            + delimited_list(ident)("except")
+            + RB
         )
         selection = (
             (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)

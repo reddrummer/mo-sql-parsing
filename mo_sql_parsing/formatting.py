@@ -157,7 +157,7 @@ class Formatter:
     _except = Operator("except")
 
     def __init__(self, ansi_quotes=True, should_quote=None):
-        self.quote_char = '"' if ansi_quotes else '`'
+        self.quote_char = '"' if ansi_quotes else "`"
         self.should_quote = should_quote or _should_quote
 
     def format(self, json):

@@ -20,7 +20,6 @@ from mo_parsing.utils import is_number, listwrap
 unary_ops = expect("unary_ops")
 
 
-
 class Call(object):
     __slots__ = ["op", "args", "kwargs"]
 
@@ -359,8 +358,8 @@ def to_flat_column_type(tokens):
     try:
         col_desc = dict(tokens)
         kwargs = listwrap(col_desc["type"])[0].kwargs
-        col_desc['character_set'] = kwargs['character_set']
-        del kwargs['character_set']
+        col_desc["character_set"] = kwargs["character_set"]
+        del kwargs["character_set"]
         return col_desc
     except Exception:
         return tokens
@@ -612,7 +611,7 @@ def to_map(tokens):
 
 def _simpler_struct_value(v):
     try:
-        v=v[0]
+        v = v[0]
         if len(v) == 1 and "value" in v:
             return v["value"]
         return v
@@ -901,4 +900,3 @@ with whitespaces.NO_WHITESPACE:
     ident_w_dash = Regex(ident_w_dash.__regex__()[1]).set_parser_name("identifier_with_dashes") / no_dashes
 
 simple_ident = Word(FIRST_IDENT_CHAR, IDENT_CHAR).set_parser_name("identifier")
-
