@@ -459,7 +459,11 @@ class TestPostgres(TestCase):
     def test_issue_157_describe5(self):
         sql = """EXPLAIN SELECT * FROM foo, bar WHERE id = fkey"""
         result = parse(sql)
-        expected = {"explain": {"from": ["foo", "bar"], "select": {"all_columns": {}}, "where": {"eq": ["id", "fkey"]}}}
+        expected = {"explain": {
+            "from": ["foo", "bar"],
+            "select": {"all_columns": {}},
+            "where": {"eq": ["id", "fkey"]},
+        }}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe6(self):

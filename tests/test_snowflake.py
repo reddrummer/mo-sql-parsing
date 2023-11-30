@@ -941,8 +941,8 @@ class TestSnowflake(TestCase):
         expected = {"create table": {
             "columns": {"name": "a", "type": {"varchar": 10}},
             "name": "foo",
-            "cluster_by": "a"}
-        }
+            "cluster_by": "a",
+        }}
         self.assertEqual(result, expected)
 
     def test_issue_201_create_table_cluster_key_composite(self):
@@ -951,6 +951,6 @@ class TestSnowflake(TestCase):
         expected = {"create table": {
             "columns": [{"name": "a", "type": {"varchar": 10}}, {"name": "b", "type": {"int": {}}}],
             "name": "foo",
-            "cluster_by": ["a", "b"]}
-        }
+            "cluster_by": ["a", "b"],
+        }}
         self.assertEqual(result, expected)

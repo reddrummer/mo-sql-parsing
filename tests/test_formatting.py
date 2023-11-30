@@ -233,7 +233,10 @@ class TestSimple(TestCase):
         self.assertEqual(result, expected)
 
     def test_union(self):
-        result = format({"union": [{"select": {"all_columns": {}}, "from": "a"}, {"select": {"all_columns": {}}, "from": "b"}]})
+        result = format({"union": [
+            {"select": {"all_columns": {}}, "from": "a"},
+            {"select": {"all_columns": {}}, "from": "b"},
+        ]})
         expected = "SELECT * FROM a UNION SELECT * FROM b"
         self.assertEqual(result, expected)
 
@@ -813,7 +816,6 @@ class TestSimple(TestCase):
         expected = "SELECT group_concat(u.co_id ORDER BY u.created DESC SEPARATOR ',')"
         result = format(parse(sql))
         self.assertEqual(result, expected)
-
 
     def test_nliteral_format(self):
         sql = "SELECT * FROM dbo.table WHERE a = N'Something'"

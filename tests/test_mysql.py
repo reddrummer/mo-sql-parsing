@@ -387,13 +387,21 @@ class TestMySql(TestCase):
     def test_regexp(self):
         sql = """SELECT * FROM dbo.table where col  REGEXP '[^0-9A-Za-z]'"""
         result = parse(sql)
-        expected = {"select": {"all_columns": {}}, "from": "dbo.table", "where": {"regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
+        expected = {
+            "select": {"all_columns": {}},
+            "from": "dbo.table",
+            "where": {"regexp": ["col", {"literal": "[^0-9A-Za-z]"}]},
+        }
         self.assertEqual(result, expected)
 
     def test_not_regexp(self):
         sql = """SELECT * FROM dbo.table where col NOT REGEXP '[^0-9A-Za-z]'"""
         result = parse(sql)
-        expected = {"select": {"all_columns": {}}, "from": "dbo.table", "where": {"not_regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
+        expected = {
+            "select": {"all_columns": {}},
+            "from": "dbo.table",
+            "where": {"not_regexp": ["col", {"literal": "[^0-9A-Za-z]"}]},
+        }
         self.assertEqual(result, expected)
 
     def test_issue_192_delete1(self):
@@ -823,13 +831,13 @@ class TestMySql(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_199_convert6(self):
-            sql = "SELECT CONVERT('test', CHAR CHARACTER SET utf8) COLLATE utf8_bin"
-            result = parse(sql)
-            expected = {"select": {"value": {"collate": [
-                {"convert": [{"literal": "test"}, {"char": {}, "character_set": "utf8"}]},
-                "utf8_bin",
-            ]}}}
-            self.assertEqual(result, expected)
+        sql = "SELECT CONVERT('test', CHAR CHARACTER SET utf8) COLLATE utf8_bin"
+        result = parse(sql)
+        expected = {"select": {"value": {"collate": [
+            {"convert": [{"literal": "test"}, {"char": {}, "character_set": "utf8"}]},
+            "utf8_bin",
+        ]}}}
+        self.assertEqual(result, expected)
 
     def test_issue_200_assign(self):
         sql = "SELECT @var1 := 1, @var2 := @var1 + 1;"

@@ -393,7 +393,12 @@ order by number_sites desc"""
         expected_sql = "SELECT 'one', *, 'two', * FROM test1"
         expected_json = {
             "from": "test1",
-            "select": [{"value": {"literal": "one"}}, {"all_columns": {}}, {"value": {"literal": "two"}}, {"all_columns": {}}],
+            "select": [
+                {"value": {"literal": "one"}},
+                {"all_columns": {}},
+                {"value": {"literal": "two"}},
+                {"all_columns": {}},
+            ],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -409,7 +414,12 @@ order by number_sites desc"""
         expected_sql = "SELECT 'one', *, 'two', * FROM test1, test2"
         expected_json = {
             "from": ["test1", "test2"],
-            "select": [{"value": {"literal": "one"}}, {"all_columns": {}}, {"value": {"literal": "two"}}, {"all_columns": {}}],
+            "select": [
+                {"value": {"literal": "one"}},
+                {"all_columns": {}},
+                {"value": {"literal": "two"}},
+                {"all_columns": {}},
+            ],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -1125,7 +1135,10 @@ order by number_sites desc"""
     def test_118b(self):
         expected_sql = "SELECT * FROM t3 UNION SELECT 3 AS a, 4 ORDER BY a"
         expected_json = {
-            "from": {"union": [{"from": "t3", "select": {"all_columns": {}}}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [
+                {"from": "t3", "select": {"all_columns": {}}},
+                {"select": [{"value": 3, "name": "a"}, {"value": 4}]},
+            ]},
             "orderby": {"value": "a"},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1133,14 +1146,20 @@ order by number_sites desc"""
     def test_118c(self):
         expected_sql = "SELECT * FROM t3 UNION SELECT 3 AS a, 4 ORDER BY a"
         expected_json = {
-            "from": {"union": [{"from": "t3", "select": {"all_columns": {}}}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [
+                {"from": "t3", "select": {"all_columns": {}}},
+                {"select": [{"value": 3, "name": "a"}, {"value": 4}]},
+            ]},
             "orderby": {"value": "a"},
         }
         self.verify_formatting(expected_sql, expected_json)
 
     def test_119(self):
         expected_sql = "SELECT 3, 4 UNION SELECT * FROM t3"
-        expected_json = {"union": [{"select": [{"value": 3}, {"value": 4}]}, {"from": "t3", "select": {"all_columns": {}}}]}
+        expected_json = {"union": [
+            {"select": [{"value": 3}, {"value": 4}]},
+            {"from": "t3", "select": {"all_columns": {}}},
+        ]}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_120(self):

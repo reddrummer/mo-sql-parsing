@@ -551,7 +551,12 @@ class TestSqlGlot(TestCase):
     def test_issue_46_sqlglot_60(self):
         sql = """CREATE OR REPLACE TEMPORARY VIEW x AS SELECT *"""
         result = parse(sql)
-        expected = {"create view": {"name": "x", "query": {"select": {"all_columns": {}}}, "replace": True, "temporary": True}}
+        expected = {"create view": {
+            "name": "x",
+            "query": {"select": {"all_columns": {}}},
+            "replace": True,
+            "temporary": True,
+        }}
         self.assertEqual(result, expected)
 
     def test_issue_46_sqlglot_61(self):
@@ -576,7 +581,11 @@ class TestSqlGlot(TestCase):
         result = parse(sql)
         expected = {"create view": {
             "name": "x",
-            "query": {"from": "y", "select": {"all_columns": {}}, "with": {"name": "y", "value": {"select": {"value": 1}}}},
+            "query": {
+                "from": "y",
+                "select": {"all_columns": {}},
+                "with": {"name": "y", "value": {"select": {"value": 1}}},
+            },
             "temporary": True,
         }}
         self.assertEqual(result, expected)

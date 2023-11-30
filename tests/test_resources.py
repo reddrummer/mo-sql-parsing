@@ -81,7 +81,12 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "test1",
-            "select": [{"value": {"literal": "one"}}, {"all_columns": {}}, {"value": {"literal": "two"}}, {"all_columns": {}}],
+            "select": [
+                {"value": {"literal": "one"}},
+                {"all_columns": {}},
+                {"value": {"literal": "two"}},
+                {"all_columns": {}},
+            ],
         }
         self.assertEqual(result, expected)
 
@@ -99,7 +104,12 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["test1", "test2"],
-            "select": [{"value": {"literal": "one"}}, {"all_columns": {}}, {"value": {"literal": "two"}}, {"all_columns": {}}],
+            "select": [
+                {"value": {"literal": "one"}},
+                {"all_columns": {}},
+                {"value": {"literal": "two"}},
+                {"all_columns": {}},
+            ],
         }
         self.assertEqual(result, expected)
 
@@ -886,7 +896,10 @@ class TestResources(TestCase):
         sql = 'SELECT * FROM t3 UNION SELECT 3 AS "a", 4 ORDER BY a'
         result = parse(sql)
         expected = {
-            "from": {"union": [{"from": "t3", "select": {"all_columns": {}}}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [
+                {"from": "t3", "select": {"all_columns": {}}},
+                {"select": [{"value": 3, "name": "a"}, {"value": 4}]},
+            ]},
             "orderby": {"value": "a"},
         }
         self.assertEqual(result, expected)
@@ -895,7 +908,10 @@ class TestResources(TestCase):
         sql = "SELECT * FROM t3 UNION SELECT 3 AS a, 4 ORDER BY a"
         result = parse(sql)
         expected = {
-            "from": {"union": [{"from": "t3", "select": {"all_columns": {}}}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [
+                {"from": "t3", "select": {"all_columns": {}}},
+                {"select": [{"value": 3, "name": "a"}, {"value": 4}]},
+            ]},
             "orderby": {"value": "a"},
         }
         self.assertEqual(result, expected)

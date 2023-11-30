@@ -1462,8 +1462,8 @@ class TestSimple(TestCase):
                     "name": "ord",
                     "over": {"orderby": {"sort": "desc", "value": "sep_id"}, "partitionby": "emp_id"},
                     "value": {"row_number": {}},
-                }
-            ]
+                },
+            ],
         }
 
         result = parse(sql)

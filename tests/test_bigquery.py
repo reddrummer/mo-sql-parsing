@@ -459,7 +459,7 @@ class TestBigQuery(TestCase):
 
     def test_issue_99_select_except(self):
         result = parse("SELECT * EXCEPT(x) FROM `a.b.c`")
-        expected = {"from": "a..b..c", "select":{"all_columns":{}, "except": "x"}}
+        expected = {"from": "a..b..c", "select": {"all_columns": {}, "except": "x"}}
         self.assertEqual(result, expected)
 
     def test_unnest(self):

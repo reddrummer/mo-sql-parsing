@@ -50,7 +50,7 @@ class TestOracle(TestCase):
         result = parse(sql)
         expected = {"select": {"all_columns": {}}, "from": ["A", {"natural join": "b"}]}
         self.assertEqual(result, expected)
-        
+
     def test_validate_conversion_parsing(self):
         query = """SELECT VALIDATE_CONVERSION(a AS DECIMAL(10, 3)) FROM b.c"""
         result = parse(query)

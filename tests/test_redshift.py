@@ -108,7 +108,11 @@ class TestRedshift(TestCase):
 
         self.assertEqual(
             result,
-            {"union_all": [{"from": "a", "select": {"all_columns": {}}}, {"from": "b", "select": {"all_columns": {}}}, {"from": "c", "select": {"all_columns": {}}}]},
+            {"union_all": [
+                {"from": "a", "select": {"all_columns": {}}},
+                {"from": "b", "select": {"all_columns": {}}},
+                {"from": "c", "select": {"all_columns": {}}},
+            ]},
         )
 
     def test_dates1(self):
@@ -402,7 +406,10 @@ class TestRedshift(TestCase):
         self.assertEqual(
             result,
             {"union_all": [
-                {"union": [{"from": "a", "select": {"all_columns": {}}}, {"from": "b", "select": {"all_columns": {}}}]},
+                {"union": [
+                    {"from": "a", "select": {"all_columns": {}}},
+                    {"from": "b", "select": {"all_columns": {}}},
+                ]},
                 {"from": "c", "select": {"all_columns": {}}},
             ]},
         )

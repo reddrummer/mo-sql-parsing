@@ -255,7 +255,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
         create_map = (keyword("map") + LK + expression("keys") + "," + expression("values") + RK) / to_map
 
-        if all_columns=="*":
+        if all_columns == "*":
             select_column = Group(Literal("*")("value") | expression("value") + alias) / to_select_call
         else:
             select_column = Group(expression("value") + alias) / to_select_call
@@ -346,8 +346,8 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
         expression << (
             (
-                Literal("*") |
-                infix_notation(
+                Literal("*")
+                | infix_notation(
                     compound,
                     ([] if sqlserver else [(dynamic_accessor, 1, LEFT_ASSOC, to_offset,)])
                     + [
