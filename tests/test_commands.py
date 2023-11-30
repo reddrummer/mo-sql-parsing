@@ -460,19 +460,19 @@ class TestTableConstraint(TestCase):
 class TestCreateSelect(TestCase):
     def test_select(self):
         result = parse("create table student as select * from XYZZY, ABC")
-        expected = {"create table": {"name": "student", "query": {"select": "*", "from": ["XYZZY", "ABC"]}}}
+        expected = {"create table": {"name": "student", "query": {"select": {"all_columns": {}}, "from": ["XYZZY", "ABC"]}}}
         self.assertEqual(result, expected)
 
     def test_paren_select(self):
         result = parse("create table student as ( select * from XYZZY )")
-        expected = {"create table": {"name": "student", "query": {"select": "*", "from": "XYZZY"}}}
+        expected = {"create table": {"name": "student", "query": {"select": {"all_columns": {}}, "from": "XYZZY"}}}
         self.assertEqual(result, expected)
 
     def test_with_select(self):
         result = parse("create table student as with t as ( select * from XYZZY ) select * from t")
         expected = {"create table": {
             "name": "student",
-            "query": {"select": "*", "from": "t", "with": {"name": "t", "value": {"select": "*", "from": "XYZZY"}}},
+            "query": {"select": {"all_columns": {}}, "from": "t", "with": {"name": "t", "value": {"select": {"all_columns": {}}, "from": "XYZZY"}}},
         }}
         self.assertEqual(result, expected)
 

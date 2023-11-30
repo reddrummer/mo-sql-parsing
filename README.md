@@ -122,7 +122,7 @@ SQL queries are translated to JSON objects: Each clause is assigned to an object
     
     # SELECT * FROM dual WHERE a>b ORDER BY a+b
     {
-        "select": "*", 
+        "select": {"all_columns": {}} 
         "from": "dual", 
         "where": {"gt": ["a", "b"]}, 
         "orderby": {"value": {"add": ["a", "b"]}}
@@ -159,6 +159,18 @@ for select in listwrap(parsed_result.get('select')):
 ```
 
 ## Version Changes, Features
+
+
+### Version 10
+
+*November 2023*
+
+SELECT * now emits `all_columns` instead of `*` to avoid confusion with multiplication operator.  The `all_columns` operator is a simple object with no parameters: `{"all_columns":{}}
+
+    SELECT * FROM table
+    
+    {"select": {"value": {"all_columns":{}}}, "from": "table"}
+
 
 
 ### Version 9

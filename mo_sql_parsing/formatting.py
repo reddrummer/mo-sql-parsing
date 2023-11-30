@@ -576,7 +576,15 @@ class Formatter:
             return "WITH {0}".format(parts)
 
     def select(self, json, prec):
-        param = ", ".join(self.dispatch(s, precedence["select"]) for s in listwrap(json["select"]))
+        select = json["select"]
+        acc = []
+        for s in listwrap(select):
+            all_col = s.get("all_columns")
+            if all_col or isinstance(all_col, dict):
+                acc.append(self.all_columns(s, precedence["select"]))
+            else:
+                acc.append(self.dispatch(s, precedence["select"]))
+        param = ", ".join(acc)
         if "top" in json:
             top = self.dispatch(json["top"])
             return f"SELECT TOP ({top}) {param}"
@@ -584,6 +592,20 @@ class Formatter:
             return param
         else:
             return f"SELECT {param}"
+
+    def all_columns(self, json, prec):
+        others = json.get("except")
+        frum = json["all_columns"]
+        if frum:
+            if others:
+                return f"{frum}.* EXCEPT ({self.dispatch(others)})"
+            else:
+                return f"{frum}.*"
+        else:
+            if others:
+                return f"* EXCEPT ({self.dispatch(others)})"
+            else:
+                return "*"
 
     def distinct_on(self, json, prec):
         param = ", ".join(self.dispatch(s) for s in listwrap(json["distinct_on"]))

@@ -58,7 +58,7 @@ class TestMySql(TestCase):
                                     "name": "day_tbl",
                                     "value": {
                                         "from": "t_dwd_tmp_wxpay_discount_model_score_hour",
-                                        "select": "*",
+                                        "select": {"all_columns": {}},
                                         "where": {"and": [{"gte": ["ds", 2022080300]}, {"lte": ["ds", 2022080323]}]},
                                     },
                                 },
@@ -92,19 +92,19 @@ class TestMySql(TestCase):
     def test_issue_157_describe1(self):
         sql = """Explain format=traditional select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "format": "traditional"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "format": "traditional"}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe2(self):
         sql = """desc format=tree select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "format": "tree"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "format": "tree"}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe3(self):
         sql = """desc format=json select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "format": "json"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "format": "json"}
         self.assertEqual(result, expected)
 
     def test_merge_into(self):
@@ -320,7 +320,7 @@ class TestMySql(TestCase):
     def test_issue_186_limit(self):
         sql = """SELECT * from t1 limit 1,10"""
         result = parse(sql)
-        expected = {"select": "*", "from": "t1", "offset": 1, "limit": 10}
+        expected = {"select": {"all_columns": {}}, "from": "t1", "offset": 1, "limit": 10}
         self.assertEqual(result, expected)
 
     def test_issue_185_group_concat(self):
@@ -364,7 +364,7 @@ class TestMySql(TestCase):
         expected = {"create view": {
             "algorithm": "undefined",
             "name": "view_name",
-            "query": {"select": "*"},
+            "query": {"select": {"all_columns": {}}},
             "replace": True,
         }}
 
@@ -387,13 +387,13 @@ class TestMySql(TestCase):
     def test_regexp(self):
         sql = """SELECT * FROM dbo.table where col  REGEXP '[^0-9A-Za-z]'"""
         result = parse(sql)
-        expected = {"select": "*", "from": "dbo.table", "where": {"regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
+        expected = {"select": {"all_columns": {}}, "from": "dbo.table", "where": {"regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
         self.assertEqual(result, expected)
 
     def test_not_regexp(self):
         sql = """SELECT * FROM dbo.table where col NOT REGEXP '[^0-9A-Za-z]'"""
         result = parse(sql)
-        expected = {"select": "*", "from": "dbo.table", "where": {"not_regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
+        expected = {"select": {"all_columns": {}}, "from": "dbo.table", "where": {"not_regexp": ["col", {"literal": "[^0-9A-Za-z]"}]}}
         self.assertEqual(result, expected)
 
     def test_issue_192_delete1(self):
@@ -745,7 +745,7 @@ class TestMySql(TestCase):
         result = parse(sql)
         expected = {
             "from": [{"name": "t1", "value": "table1"}, {"straight_join": {"name": "t3", "value": "table3"}},],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -757,7 +757,7 @@ class TestMySql(TestCase):
                 {"name": "t1", "value": "table1"},
                 {"on": {"eq": ["t1.id", "t3.id"]}, "straight_join": {"name": "t3", "value": "table3"}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 

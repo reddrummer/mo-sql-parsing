@@ -24,7 +24,7 @@ class TestBigQuery(TestCase):
         result = parse(sql)
         expected = {
             "from": "t",
-            "select": "*",
+            "select": {"all_columns": {}},
             "with": {
                 "name": "t",
                 "value": {"case": {
@@ -370,7 +370,7 @@ class TestBigQuery(TestCase):
     def testU(self):
         sql = """SELECT  * FROM `a`.b.`c`"""
         result = parse(sql)
-        expected = {"from": "a.b.c", "select": "*"}
+        expected = {"from": "a.b.c", "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def testV(self):
@@ -379,7 +379,7 @@ class TestBigQuery(TestCase):
                     ON cast(a1.field AS BIGDECIMAL) = cast(a2.field AS BIGNUMERIC)"""
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": [
                 {"value": "a..b..c", "name": "a1"},
                 {
@@ -399,7 +399,7 @@ class TestBigQuery(TestCase):
                     ON cast(a1.field AS INT64) = cast(a2.field AS BYTEINT)"""
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": [
                 {"value": "a..b..c", "name": "a1"},
                 {
@@ -465,7 +465,7 @@ class TestBigQuery(TestCase):
     def test_unnest(self):
         result = parse("""SELECT * FROM UNNEST([1, 2, 2, 5, NULL]) AS unnest_column WITH OFFSET AS `offset`""")
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": {
                 "name": "unnest_column",
                 "value": {"unnest": {"create_array": [1, 2, 2, 5, {"null": {}}]}},
@@ -555,7 +555,7 @@ class TestBigQuery(TestCase):
             "with": {
                 "name": "shift_history_pivoted",
                 "value": {
-                    "select": "*",
+                    "select": {"all_columns": {}},
                     "from": [
                         "*********************..**************..**************",
                         {"unpivot": {
@@ -1263,7 +1263,7 @@ class TestBigQuery(TestCase):
                 {"and": ["agent_in", {"ifnull": [{"over": "win", "value": {"lag": "agent_in"}}, False]}]},
                 False,
             ]},
-            "select": "*",
+            "select": {"all_columns": {}},
             "window": {"name": "win", "value": {"orderby": {"value": "event_created_at"}, "partitionby": "id"}},
         }
         self.assertEqual(result, expected)
@@ -1366,7 +1366,7 @@ class TestBigQuery(TestCase):
                         ],
                         "from": [
                             {
-                                "select": "*",
+                                "select": {"all_columns": {}},
                                 "from": "first_stage",
                                 "qualify": {"eq": [
                                     {"and": [
@@ -1388,7 +1388,7 @@ class TestBigQuery(TestCase):
                     },
                 },
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "second_stage",
         }
         self.assertEqual(result, expected)
@@ -1430,7 +1430,7 @@ class TestBigQuery(TestCase):
             )"""
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": [
                 {
                     "select": [
@@ -1512,7 +1512,7 @@ class TestBigQuery(TestCase):
                         {"name": "col2", "value": {"unnest": {"generate_array": [10, 12]}}},
                         {"name": "col3", "value": {"unnest": {"generate_array": [20, 22]}}},
                     ],
-                    "select": "*",
+                    "select": {"all_columns": {}},
                 },
             },
         }
@@ -1537,7 +1537,7 @@ class TestBigQuery(TestCase):
                 "for_system_time_as_of": {"timestamp_sub": [{"current_timestamp": {}}, {"interval": [1, "hour"]}]},
                 "value": "mydataset..mytable",
             },
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -1553,7 +1553,7 @@ class TestBigQuery(TestCase):
                 "for_system_time_as_of": {"timestamp_sub": [{"current_timestamp": {}}, {"interval": [1, "hour"]}]},
                 "value": "mydataset..mytable",
             },
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -1568,7 +1568,7 @@ class TestBigQuery(TestCase):
         expected = {
             "from": "raw_data",
             "select": [
-                {"all_columns": {"from": "raw_data"}, "except": "col3"},
+                {"all_columns": "raw_data", "except": "col3"},
                 {"name": "new_col", "value": {"add": ["col3", "col1"]}},
             ],
         }

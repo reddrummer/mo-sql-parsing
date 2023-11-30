@@ -18,7 +18,7 @@ class TestOracle(TestCase):
         result = parse(sql)
         expected = {
             "from": {"tablesample": {"method": "bernoulli", "percent": 1}, "value": "foo"},
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["a", 42]},
         }
         self.assertEqual(result, expected)
@@ -28,7 +28,7 @@ class TestOracle(TestCase):
         result = parse(sql)
         expected = {
             "from": {"tablesample": {"percent": 1}, "value": "foo"},
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["a", 42]},
         }
         self.assertEqual(result, expected)
@@ -36,19 +36,19 @@ class TestOracle(TestCase):
     def test_issue_157_describe(self):
         sql = """describe into s.t@database for select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "into": "s.t@database"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "into": "s.t@database"}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe2(self):
         sql = """explain plan into s.t@database for select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "into": "s.t@database"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "into": "s.t@database"}
         self.assertEqual(result, expected)
 
     def test_natural_join(self):
         sql = """select * from A natural join b"""
         result = parse(sql)
-        expected = {"select": "*", "from": ["A", {"natural join": "b"}]}
+        expected = {"select": {"all_columns": {}}, "from": ["A", {"natural join": "b"}]}
         self.assertEqual(result, expected)
         
     def test_validate_conversion_parsing(self):

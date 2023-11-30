@@ -54,12 +54,12 @@ class TestFormatAndParse(TestCase):
 
     def test_two_tables(self):
         expected_sql = "SELECT * from XYZZY, ABC"
-        expected_json = {"select": "*", "from": ["XYZZY", "ABC"]}
+        expected_json = {"select": {"all_columns": {}}, "from": ["XYZZY", "ABC"]}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_dot_table_name(self):
         expected_sql = "select * from SYS.XYZZY"
-        expected_json = {"select": "*", "from": "SYS.XYZZY"}
+        expected_json = {"select": {"all_columns": {}}, "from": "SYS.XYZZY"}
         self.verify_formatting(expected_sql, expected_json)
 
     def select_one_column(self):
@@ -104,7 +104,7 @@ class TestFormatAndParse(TestCase):
     def test_where_neq(self):
         expected_sql = "SELECT * FROM dual WHERE a<>'test'"
         expected_json = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "dual",
             "where": {"neq": ["a", {"literal": "test"}]},
         }
@@ -278,7 +278,7 @@ order by number_sites desc"""
                 {"eq": ["name", {"literal": "abc"}]},
                 {"in": ["id", {"literal": ["1", "2"]}]},
             ]},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -286,7 +286,7 @@ order by number_sites desc"""
         expected_sql = "select * from task where repo.branch.name in ('try', 'mozilla-central')"
         expected_json = {
             "from": "task",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"in": ["repo.branch.name", {"literal": ["try", "mozilla-central"]}]},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -298,14 +298,14 @@ order by number_sites desc"""
                 {"name": "t1", "value": "table1"},
                 {"on": {"eq": ["t1.id", "t3.id"]}, "join": {"name": "t3", "value": "table3"}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.verify_formatting(expected_sql, expected_json)
 
     def test_with_cte(self):
         expected_sql = "WITH t AS (SELECT a FROM table) SELECT * FROM t"
         expected_json = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "t",
             "with": {"name": "t", "value": {"select": {"value": "a"}, "from": "table"}},
         }
@@ -314,7 +314,7 @@ order by number_sites desc"""
     def test_with_cte_various(self):
         expected_sql = "WITH t1 AS (SELECT a FROM table), t2 AS (SELECT 1) SELECT * FROM t1, t2"
         expected_json = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": ["t1", "t2"],
             "with": [
                 {"name": "t1", "value": {"select": {"value": "a"}, "from": "table"}},
@@ -326,7 +326,7 @@ order by number_sites desc"""
     def test_not_equal(self):
         expected_sql = "SELECT * FROM task WHERE build.product IS NOT NULL AND build.product <> 'firefox'"
         expected_json = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "task",
             "where": {"and": [{"exists": "build.product"}, {"neq": ["build.product", {"literal": "firefox"}]}]},
         }
@@ -343,17 +343,17 @@ order by number_sites desc"""
 
     def test_001(self):
         expected_sql = "SELECT * FROM test1"
-        expected_json = {"from": "test1", "select": "*"}
+        expected_json = {"from": "test1", "select": {"all_columns": {}}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_002(self):
         expected_sql = "SELECT * FROM test1, test2"
-        expected_json = {"from": ["test1", "test2"], "select": "*"}
+        expected_json = {"from": ["test1", "test2"], "select": {"all_columns": {}}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_003(self):
         expected_sql = "SELECT * FROM test2, test1"
-        expected_json = {"from": ["test2", "test1"], "select": "*"}
+        expected_json = {"from": ["test2", "test1"], "select": {"all_columns": {}}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_004(self):
@@ -378,14 +378,14 @@ order by number_sites desc"""
 
     def test_008(self):
         expected_sql = "SELECT *, * FROM test1"
-        expected_json = {"from": "test1", "select": "*"}
+        expected_json = {"from": "test1", "select": {"all_columns": {}}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_009(self):
         expected_sql = "SELECT *, min(f1,f2), max(f1,f2) FROM test1"
         expected_json = {
             "from": "test1",
-            "select": ["*", {"value": {"min": ["f1", "f2"]}}, {"value": {"max": ["f1", "f2"]}}],
+            "select": [{"all_columns": {}}, {"value": {"min": ["f1", "f2"]}}, {"value": {"max": ["f1", "f2"]}}],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -393,7 +393,7 @@ order by number_sites desc"""
         expected_sql = "SELECT 'one', *, 'two', * FROM test1"
         expected_json = {
             "from": "test1",
-            "select": [{"value": {"literal": "one"}}, "*", {"value": {"literal": "two"}}, "*"],
+            "select": [{"value": {"literal": "one"}}, {"all_columns": {}}, {"value": {"literal": "two"}}, {"all_columns": {}}],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -401,7 +401,7 @@ order by number_sites desc"""
         expected_sql = "SELECT *, 'hi' FROM test1, test2"
         expected_json = {
             "from": ["test1", "test2"],
-            "select": ["*", {"value": {"literal": "hi"}}],
+            "select": [{"all_columns": {}}, {"value": {"literal": "hi"}}],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -409,7 +409,7 @@ order by number_sites desc"""
         expected_sql = "SELECT 'one', *, 'two', * FROM test1, test2"
         expected_json = {
             "from": ["test1", "test2"],
-            "select": [{"value": {"literal": "one"}}, "*", {"value": {"literal": "two"}}, "*"],
+            "select": [{"value": {"literal": "one"}}, {"all_columns": {}}, {"value": {"literal": "two"}}, {"all_columns": {}}],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -433,7 +433,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM test1 AS a, test1 AS b"
         expected_json = {
             "from": [{"value": "test1", "name": "a"}, {"value": "test1", "name": "b"}],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -775,24 +775,24 @@ order by number_sites desc"""
 
     def test_067(self):
         expected_sql = "SELECT * FROM t5 ORDER BY 1"
-        expected_json = {"from": "t5", "select": "*", "orderby": {"value": 1}}
+        expected_json = {"from": "t5", "select": {"all_columns": {}}, "orderby": {"value": 1}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_068(self):
         expected_sql = "SELECT * FROM t5 ORDER BY 2"
-        expected_json = {"from": "t5", "select": "*", "orderby": {"value": 2}}
+        expected_json = {"from": "t5", "select": {"all_columns": {}}, "orderby": {"value": 2}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_069(self):
         expected_sql = "SELECT * FROM t5 ORDER BY +2"
-        expected_json = {"from": "t5", "select": "*", "orderby": {"value": 2}}
+        expected_json = {"from": "t5", "select": {"all_columns": {}}, "orderby": {"value": 2}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_070(self):
         expected_sql = "SELECT * FROM t5 ORDER BY 2, 1 DESC"
         expected_json = {
             "from": "t5",
-            "select": "*",
+            "select": {"all_columns": {}},
             "orderby": [{"value": 2}, {"value": 1, "sort": "desc"}],
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -801,7 +801,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM t5 ORDER BY 1 DESC, b"
         expected_json = {
             "from": "t5",
-            "select": "*",
+            "select": {"all_columns": {}},
             "orderby": [{"value": 1, "sort": "desc"}, {"value": "b"}],
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -810,7 +810,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM t5 ORDER BY b DESC, 1"
         expected_json = {
             "from": "t5",
-            "select": "*",
+            "select": {"all_columns": {}},
             "orderby": [{"value": "b", "sort": "desc"}, {"value": 1}],
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1004,28 +1004,28 @@ order by number_sites desc"""
 
     def test_100(self):
         expected_sql = "SELECT * FROM test1 WHERE f1<0"
-        expected_json = {"from": "test1", "select": "*", "where": {"lt": ["f1", 0]}}
+        expected_json = {"from": "test1", "select": {"all_columns": {}}, "where": {"lt": ["f1", 0]}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_103(self):
         expected_sql = "SELECT * FROM test1 WHERE f1<(select count(*) from test2)"
         expected_json = {
             "from": "test1",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["f1", {"from": "test2", "select": {"value": {"count": "*"}}}]},
         }
         self.verify_formatting(expected_sql, expected_json)
 
     def test_104(self):
         expected_sql = "SELECT * FROM test1 ORDER BY f1"
-        expected_json = {"from": "test1", "select": "*", "orderby": {"value": "f1"}}
+        expected_json = {"from": "test1", "select": {"all_columns": {}}, "orderby": {"value": "f1"}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_105(self):
         expected_sql = "SELECT * FROM test1 WHERE f1<0 ORDER BY f1"
         expected_json = {
             "from": "test1",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["f1", 0]},
             "orderby": {"value": "f1"},
         }
@@ -1095,14 +1095,14 @@ order by number_sites desc"""
 
     def test_113(self):
         expected_sql = "SELECT * FROM t3, t4"
-        expected_json = {"from": ["t3", "t4"], "select": "*"}
+        expected_json = {"from": ["t3", "t4"], "select": {"all_columns": {}}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_114(self):
         expected_sql = "SELECT t3.*, t4.b FROM t3, t4"
         expected_json = {
             "from": ["t3", "t4"],
-            "select": [{"value": "t3.*"}, {"value": "t4.b"}],
+            "select": [{"all_columns": "t3"}, {"value": "t4.b"}],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -1110,7 +1110,7 @@ order by number_sites desc"""
         expected_sql = "SELECT t3.*, t4.b FROM t3, t4"
         expected_json = {
             "from": ["t3", "t4"],
-            "select": [{"value": "t3.*"}, {"value": "t4.b"}],
+            "select": [{"all_columns": "t3"}, {"value": "t4.b"}],
         }
         self.verify_formatting(expected_sql, expected_json)
 
@@ -1118,14 +1118,14 @@ order by number_sites desc"""
         expected_sql = "SELECT t3.b, t4.* FROM t3, t4"
         expected_json = {
             "from": ["t3", "t4"],
-            "select": [{"value": "t3.b"}, {"value": "t4.*"}],
+            "select": [{"value": "t3.b"}, {"all_columns": "t4"}],
         }
         self.verify_formatting(expected_sql, expected_json)
 
     def test_118b(self):
         expected_sql = "SELECT * FROM t3 UNION SELECT 3 AS a, 4 ORDER BY a"
         expected_json = {
-            "from": {"union": [{"from": "t3", "select": "*"}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [{"from": "t3", "select": {"all_columns": {}}}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
             "orderby": {"value": "a"},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1133,21 +1133,21 @@ order by number_sites desc"""
     def test_118c(self):
         expected_sql = "SELECT * FROM t3 UNION SELECT 3 AS a, 4 ORDER BY a"
         expected_json = {
-            "from": {"union": [{"from": "t3", "select": "*"}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [{"from": "t3", "select": {"all_columns": {}}}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
             "orderby": {"value": "a"},
         }
         self.verify_formatting(expected_sql, expected_json)
 
     def test_119(self):
         expected_sql = "SELECT 3, 4 UNION SELECT * FROM t3"
-        expected_json = {"union": [{"select": [{"value": 3}, {"value": 4}]}, {"from": "t3", "select": "*"}]}
+        expected_json = {"union": [{"select": [{"value": 3}, {"value": 4}]}, {"from": "t3", "select": {"all_columns": {}}}]}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_120(self):
         expected_sql = "SELECT * FROM t3 WHERE a=(SELECT 1)"
         expected_json = {
             "from": "t3",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"eq": ["a", {"select": {"value": 1}}]},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1156,7 +1156,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM t3 WHERE a=(SELECT 2)"
         expected_json = {
             "from": "t3",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"eq": ["a", {"select": {"value": 2}}]},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1226,12 +1226,12 @@ order by number_sites desc"""
 
     def test_145(self):
         expected_sql = "SELECT * FROM tbl2 WHERE 1000=f2"
-        expected_json = {"from": "tbl2", "select": "*", "where": {"eq": [1000, "f2"]}}
+        expected_json = {"from": "tbl2", "select": {"all_columns": {}}, "where": {"eq": [1000, "f2"]}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_146(self):
         expected_sql = "SELECT * FROM tbl2 WHERE f2=1000"
-        expected_json = {"from": "tbl2", "select": "*", "where": {"eq": ["f2", 1000]}}
+        expected_json = {"from": "tbl2", "select": {"all_columns": {}}, "where": {"eq": ["f2", 1000]}}
         self.verify_formatting(expected_sql, expected_json)
 
     def test_148(self):
@@ -1247,7 +1247,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM aa CROSS JOIN bb WHERE b"
         expected_json = {
             "from": ["aa", {"cross join": "bb"}],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": "b",
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1256,7 +1256,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM aa CROSS JOIN bb WHERE NOT b"
         expected_json = {
             "from": ["aa", {"cross join": "bb"}],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"not": "b"},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1265,7 +1265,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM aa, bb WHERE min(a,b)"
         expected_json = {
             "from": ["aa", "bb"],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"min": ["a", "b"]},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1274,7 +1274,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM aa, bb WHERE NOT min(a,b)"
         expected_json = {
             "from": ["aa", "bb"],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"not": {"min": ["a", "b"]}},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1283,7 +1283,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM aa, bb WHERE CASE WHEN a=b-1 THEN 1 END"
         expected_json = {
             "from": ["aa", "bb"],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"case": {"when": {"eq": ["a", {"sub": ["b", 1]}]}, "then": 1}},
         }
         self.verify_formatting(expected_sql, expected_json)
@@ -1292,7 +1292,7 @@ order by number_sites desc"""
         expected_sql = "SELECT * FROM aa, bb WHERE CASE WHEN a=b-1 THEN 0 ELSE 1 END"
         expected_json = {
             "from": ["aa", "bb"],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"case": [{"when": {"eq": ["a", {"sub": ["b", 1]}]}, "then": 0}, 1]},
         }
         self.verify_formatting(expected_sql, expected_json)

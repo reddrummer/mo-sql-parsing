@@ -19,7 +19,7 @@ class TestAthena(TestCase):
         result = parse(sql)
         expected = {
             "from": {"name": {"table_name": "column_name"}, "value": {"unnest": {"create_array": ["foo", "bar"]}}},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -115,13 +115,13 @@ class TestAthena(TestCase):
     def test_issue_125_pivot_identifier1(self):
         sql = """SELECT * FROM pivot;"""
         result = parse(sql)
-        expected = {"from": "pivot", "select": "*"}
+        expected = {"from": "pivot", "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_issue_125_pivot_identifier2(self):
         sql = """SELECT * FROM a AS pivot;"""
         result = parse(sql)
-        expected = {"from": {"name": "pivot", "value": "a"}, "select": "*"}
+        expected = {"from": {"name": "pivot", "value": "a"}, "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_issue_125_pivot_identifier3(self):
@@ -129,7 +129,7 @@ class TestAthena(TestCase):
         result = parse(sql)
         expected = {
             "from": {"name": {"pivot": "n"}, "value": {"unnest": {"create_array": [1, 2, 3]}}},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -142,20 +142,20 @@ class TestAthena(TestCase):
                 {"name": {"pivot": "n"}, "value": {"unnest": {"create_array": [1, 2, 3]}}},
                 {"join": "a", "on": {"eq": ["a.id", "pivot.n"]}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
     def test_issue_125_unpivot_identifier1(self):
         sql = """SELECT * FROM unpivot;"""
         result = parse(sql)
-        expected = {"from": "unpivot", "select": "*"}
+        expected = {"from": "unpivot", "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_issue_125_unpivot_identifier2(self):
         sql = """SELECT * FROM a AS unpivot;"""
         result = parse(sql)
-        expected = {"from": {"name": "unpivot", "value": "a"}, "select": "*"}
+        expected = {"from": {"name": "unpivot", "value": "a"}, "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_issue_125_unpivot_identifier3(self):
@@ -163,7 +163,7 @@ class TestAthena(TestCase):
         result = parse(sql)
         expected = {
             "from": {"name": {"unpivot": "n"}, "value": {"unnest": {"create_array": [1, 2, 3]}}},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -176,6 +176,6 @@ class TestAthena(TestCase):
                 {"name": {"unpivot": "n"}, "value": {"unnest": {"create_array": [1, 2, 3]}}},
                 {"join": "a", "on": {"eq": ["a.id", "pivot.n"]}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)

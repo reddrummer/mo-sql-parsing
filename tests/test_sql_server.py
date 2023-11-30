@@ -46,18 +46,18 @@ class TestSqlServer(TestCase):
         # https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql?view=sql-server-ver15
         sql = "SELECT TOP 3 * FROM Customers"
         result = parse(sql)
-        self.assertEqual(result, {"top": 3, "select": "*", "from": "Customers"})
+        self.assertEqual(result, {"top": 3, "select": {"all_columns": {}}, "from": "Customers"})
 
         sql = "SELECT TOP func(value) WITH TIES *"
         result = parse(sql)
         self.assertEqual(
-            result, {"top": {"value": {"func": "value"}, "ties": True}, "select": "*"},
+            result, {"top": {"value": {"func": "value"}, "ties": True}, "select": {"all_columns": {}}},
         )
 
         sql = "SELECT TOP 1 PERCENT WITH TIES *"
         result = parse(sql)
         self.assertEqual(
-            result, {"top": {"percent": 1, "ties": True}, "select": "*"},
+            result, {"top": {"percent": 1, "ties": True}, "select": {"all_columns": {}}},
         )
 
         sql = "SELECT TOP a(b) PERCENT item"
@@ -125,7 +125,7 @@ class TestSqlServer(TestCase):
         result = parse(sql)
         expected = {
             "from": {"name": "X", "value": {"from": {"name": "B", "value": "dbo.b"}, "select": {"value": "result"}}},
-            "select": "*",
+            "select": {"all_columns": {}},
             "top": 1000,
             "where": {"neq": ["expected", "result"]},
         }
@@ -154,7 +154,7 @@ class TestSqlServer(TestCase):
                 {"name": "D", "value": "Department"},
                 {"cross apply": {"dbo.fn_getallemployeeofadepartment": "D.DepartmentID"}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -169,7 +169,7 @@ class TestSqlServer(TestCase):
                 {"name": "D", "value": "Department"},
                 {"outer apply": {"dbo.fn_getallemployeeofadepartment": "D.DepartmentID"}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -178,7 +178,7 @@ class TestSqlServer(TestCase):
         result = parse(sql)
         expected = {
             "from": {"tablesample": {"method": "bernoulli", "percent": 1}, "value": "foo"},
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["a", 42]},
         }
         self.assertEqual(result, expected)
@@ -188,7 +188,7 @@ class TestSqlServer(TestCase):
         result = parse(sql)
         expected = {
             "from": {"name": "f", "tablesample": {"method": "bernoulli", "percent": 1}, "value": "foo"},
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["f.a", 42]},
         }
         self.assertEqual(result, expected)
@@ -205,7 +205,7 @@ class TestSqlServer(TestCase):
         """
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": [
                 "p",
                 {"pivot": {"name": "pvt", "aggregate": {"count": "id"}, "for": "E", "in": [250, 251, 256, 257, 260]}},
@@ -217,7 +217,7 @@ class TestSqlServer(TestCase):
         sql = """describe with_recommendations select * from temp"""
         result = parse(sql)
         expected = {
-            "explain": {"from": "temp", "select": "*"},
+            "explain": {"from": "temp", "select": {"all_columns": {}}},
             "with_recommendations": True,
         }
         self.assertEqual(result, expected)
@@ -264,5 +264,5 @@ class TestSqlServer(TestCase):
     def test_nliteral_parse(self):
             sql = """SELECT * FROM dbo.table WHERE a = N'Something'"""
             result = parse(sql)
-            expected = {'select': '*', 'from': 'dbo.table', 'where': {'eq': ['a', {'nliteral': 'Something'}]}}
+            expected = {'select': {"all_columns": {}}, 'from': 'dbo.table', 'where': {'eq': ['a', {'nliteral': 'Something'}]}}
             self.assertEqual(result, expected)

@@ -2,7 +2,7 @@
     "author": "Kyle Lahnakoski",
     "author_email": "kyle@lahnakoski.com",
     "classifiers": [
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Programming Language :: SQL",
@@ -284,6 +284,6 @@
     "name": "mo-sql-parsing",
     "packages": ["mo_sql_parsing"],
     "url": "https://github.com/klahnakoski/mo-sql-parsing",
-    "version": "9.462.23329",
+    "version": "10.0.0",
     "zip_safe": true
 }

@@ -19,12 +19,12 @@ parse = lambda s: sql_parse(s, calls=normal_op)
 class TestSimpleUsingOperators(TestCase):
     def test_two_tables(self):
         result = parse("SELECT * from XYZZY, ABC")
-        expected = {"from": ["XYZZY", "ABC"], "select": "*"}
+        expected = {"from": ["XYZZY", "ABC"], "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_dot_table_name(self):
         result = parse("select * from SYS.XYZZY")
-        expected = {"from": "SYS.XYZZY", "select": "*"}
+        expected = {"from": "SYS.XYZZY", "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_select_one_column(self):
@@ -112,7 +112,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse("SELECT * FROM dual WHERE a<>'test'")
         expected = {
             "from": "dual",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": ["a", {"literal": "test"}], "op": "neq"},
         }
         self.assertEqual(result, expected)
@@ -319,7 +319,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse("select * from trade where school LIKE '%shool' and name='abc' and id IN ('1','2')")
         expected = {
             "from": "trade",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {
                 "args": [
                     {"args": ["school", {"literal": "%shool"}], "op": "like"},
@@ -395,7 +395,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse("select * from task where repo.branch.name in ('try', 'mozilla-central')")
         expected = {
             "from": "task",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": ["repo.branch.name", {"literal": ["try", "mozilla-central"]}], "op": "in"},
         }
         self.assertEqual(result, expected)
@@ -404,7 +404,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse("select * from task where repo.branch.name not in ('try', 'mozilla-central')")
         expected = {
             "from": "task",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": ["repo.branch.name", {"literal": ["try", "mozilla-central"]}], "op": "nin"},
         }
         self.assertEqual(result, expected)
@@ -417,7 +417,7 @@ class TestSimpleUsingOperators(TestCase):
                 {"name": "t1", "value": "table1"},
                 {"join": {"name": "t3", "value": "table3"}, "on": {"args": ["t1.id", "t3.id"], "op": "eq"}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -428,7 +428,7 @@ class TestSimpleUsingOperators(TestCase):
 
         expected = {
             "from": "task",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {
                 "args": [
                     {"args": ["build.product"], "op": "exists"},
@@ -637,7 +637,7 @@ class TestSimpleUsingOperators(TestCase):
                 {"name": "pi", "value": "person_info"},
                 {"name": "t", "value": "title"},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {
                 "args": [
                     {"args": ["an.name"], "op": "exists"},
@@ -718,7 +718,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": "t",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": ["c", 4], "op": "binary_and"},
         }
         self.assertEqual(result, expected)
@@ -728,7 +728,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": "t",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": ["c", 4], "op": "binary_or"},
         }
         self.assertEqual(result, expected)
@@ -740,7 +740,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": "t",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": ["c"], "op": "binary_not"},
         }
         self.assertEqual(result, expected)
@@ -750,7 +750,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": "dual",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": ["a", {"args": ["b", "c"], "op": "and"}], "op": "or"},
         }
         self.assertEqual(result, expected)
@@ -760,7 +760,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": "dual",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"args": [{"args": ["a", "b"], "op": "and"}, "c"], "op": "or"},
         }
         self.assertEqual(result, expected)
@@ -828,7 +828,7 @@ class TestSimpleUsingOperators(TestCase):
                 ],
                 "op": "or",
             },
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -853,7 +853,7 @@ class TestSimpleUsingOperators(TestCase):
     def test_issue_92(self):
         sql = "SELECT * FROM `movies`"
         result = parse(sql)
-        expected = {"select": "*", "from": "movies"}
+        expected = {"select": {"all_columns": {}}, "from": "movies"}
         self.assertEqual(result, expected)
 
     def test_with_clause(self):
@@ -918,7 +918,7 @@ class TestSimpleUsingOperators(TestCase):
         sql = " WITH a AS (SELECT 1), b AS (SELECT 2) SELECT * FROM a UNION ALL SELECT * FROM b"
         result = parse(sql)
         expected = {
-            "union_all": [{"from": "a", "select": "*"}, {"from": "b", "select": "*"}],
+            "union_all": [{"from": "a", "select": {"all_columns": {}}}, {"from": "b", "select": {"all_columns": {}}}],
             "with": [
                 {"name": "a", "value": {"select": {"value": 1}}},
                 {"name": "b", "value": {"select": {"value": 2}}},
@@ -993,7 +993,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": {"args": [{"literal": "parameter"}, 1, "some_col"], "op": "some_table.some_function"},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -1088,7 +1088,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": "a",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {
                 "args": [
                     {"args": ["a", 1], "op": "eq"},
@@ -1146,7 +1146,7 @@ class TestSimpleUsingOperators(TestCase):
         #      012345678901234567890123456789
         sql = "SELECT * FROM jobs LIMIT 10"
         result = parse(sql)
-        expected = {"from": "jobs", "limit": 10, "select": "*"}
+        expected = {"from": "jobs", "limit": 10, "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_issue2a_of_fork(self):
@@ -1444,7 +1444,7 @@ class TestSimpleUsingOperators(TestCase):
         result = parse(sql)
         expected = {
             "from": "dbo.a",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"op": "eq", "args": [{"op": "mul", "args": [{"args": ["a"], "op": "abs"}, -1]}, -22]},
         }
         self.assertEqual(result, expected)

@@ -25,7 +25,7 @@ bigquery_parser = None
 SQL_NULL = {"null": {}}
 
 
-def parse(sql, null=SQL_NULL, calls=simple_op):
+def parse(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
     """
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
@@ -36,12 +36,12 @@ def parse(sql, null=SQL_NULL, calls=simple_op):
 
     with parse_locker:
         if not common_parser:
-            common_parser = sql_parser.common_parser()
+            common_parser = sql_parser.common_parser(all_columns)
         result = _parse(common_parser, sql, null, calls)
         return result
 
 
-def parse_mysql(sql, null=SQL_NULL, calls=simple_op):
+def parse_mysql(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
     """
     PARSE MySQL ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
     :param sql: String of SQL
@@ -52,11 +52,11 @@ def parse_mysql(sql, null=SQL_NULL, calls=simple_op):
 
     with parse_locker:
         if not mysql_parser:
-            mysql_parser = sql_parser.mysql_parser()
+            mysql_parser = sql_parser.mysql_parser(all_columns)
         return _parse(mysql_parser, sql, null, calls)
 
 
-def parse_sqlserver(sql, null=SQL_NULL, calls=simple_op):
+def parse_sqlserver(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
     """
     PARSE MySQL ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
     :param sql: String of SQL
@@ -67,11 +67,11 @@ def parse_sqlserver(sql, null=SQL_NULL, calls=simple_op):
 
     with parse_locker:
         if not sqlserver_parser:
-            sqlserver_parser = sql_parser.sqlserver_parser()
+            sqlserver_parser = sql_parser.sqlserver_parser(all_columns)
         return _parse(sqlserver_parser, sql, null, calls)
 
 
-def parse_bigquery(sql, null=SQL_NULL, calls=simple_op):
+def parse_bigquery(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
     """
     PARSE BigQuery ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
     :param sql: String of SQL
@@ -82,7 +82,7 @@ def parse_bigquery(sql, null=SQL_NULL, calls=simple_op):
 
     with parse_locker:
         if not bigquery_parser:
-            bigquery_parser = sql_parser.bigquery_parser()
+            bigquery_parser = sql_parser.bigquery_parser(all_columns)
         return _parse(bigquery_parser, sql, null, calls)
 
 

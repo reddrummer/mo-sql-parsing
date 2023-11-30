@@ -16,31 +16,31 @@ from mo_sql_parsing.utils import *
 from mo_sql_parsing.windows import window
 
 
-def common_parser():
+def common_parser(all_columns):
     atomic_ident = ansi_ident | mysql_backtick_ident | simple_ident
-    return parser(regex_string | ansi_string, atomic_ident)
+    return parser(regex_string | ansi_string, atomic_ident, all_columns=all_columns)
 
 
-def mysql_parser():
+def mysql_parser(all_columns):
     utils.emit_warning_for_double_quotes = False
 
     mysql_string = regex_string | ansi_string | mysql_doublequote_string
     atomic_ident = mysql_backtick_ident | sqlserver_ident | ident_w_dash
-    return parser(mysql_string, atomic_ident)
+    return parser(mysql_string, atomic_ident, all_columns=all_columns)
 
 
-def sqlserver_parser():
+def sqlserver_parser(all_columns):
     atomic_ident = ansi_ident | mysql_backtick_ident | sqlserver_ident | simple_ident
-    return parser(regex_string | ansi_string | n_string, atomic_ident, sqlserver=True)
+    return parser(regex_string | ansi_string | n_string, atomic_ident, sqlserver=True, all_columns=all_columns)
 
 
-def bigquery_parser():
+def bigquery_parser(all_columns):
     mysql_string = regex_string | ansi_string | mysql_doublequote_string
     atomic_ident = ansi_ident | mysql_backtick_ident | simple_ident
-    return parser(mysql_string, atomic_ident)
+    return parser(mysql_string, atomic_ident, all_columns=all_columns)
 
 
-def parser(literal_string, simple_ident, sqlserver=False):
+def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
     debugger = debug.DEBUGGER or Null
     debugger.__exit__(None, None, None)
 
@@ -255,8 +255,10 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         create_map = (keyword("map") + LK + expression("keys") + "," + expression("values") + RK) / to_map
 
-        # select_column = Group(Literal("*")("all_columns")/{} | expression("value") + alias) / to_select_call
-        select_column = Group(Literal("*")("value") | expression("value") + alias) / to_select_call
+        if all_columns=="*":
+            select_column = Group(Literal("*")("value") | expression("value") + alias) / to_select_call
+        else:
+            select_column = Group(expression("value") + alias) / to_select_call
 
         create_struct = (
             keyword("struct")("op")
@@ -344,8 +346,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         expression << (
             (
-                Literal("*")
-                | infix_notation(
+                Literal("*") |
+                infix_notation(
                     compound,
                     ([] if sqlserver else [(dynamic_accessor, 1, LEFT_ASSOC, to_offset,)])
                     + [
@@ -412,11 +414,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
         )
 
         except_columns = Group(
-            (ident("from") + ".*" | Literal("*") / {})("all_columns")
-            + EXCEPT.suppress()
-            + LB
-            + delimited_list(ident)("except")
-            + RB
+            (Literal("*") / {} | ident + Suppress(".*"))("all_columns")
+            + Optional(EXCEPT.suppress() + LB + delimited_list(ident)("except") + RB)
         )
         selection = (
             (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)

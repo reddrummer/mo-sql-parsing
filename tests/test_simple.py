@@ -33,12 +33,12 @@ class TestSimple(TestCase):
 
     def test_two_tables(self):
         result = parse("SELECT * from XYZZY, ABC")
-        expected = {"select": "*", "from": ["XYZZY", "ABC"]}
+        expected = {"select": {"all_columns": {}}, "from": ["XYZZY", "ABC"]}
         self.assertEqual(result, expected)
 
     def test_dot_table_name(self):
         result = parse("select * from SYS.XYZZY")
-        expected = {"select": "*", "from": "SYS.XYZZY"}
+        expected = {"select": {"all_columns": {}}, "from": "SYS.XYZZY"}
         self.assertEqual(result, expected)
 
     def test_select_one_column(self):
@@ -117,7 +117,7 @@ class TestSimple(TestCase):
         #               0123456789012345678901234567890123456789012345678901234567890123456789
         result = parse("SELECT * FROM dual WHERE a<>'test'")
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "dual",
             "where": {"neq": ["a", {"literal": "test"}]},
         }
@@ -291,7 +291,7 @@ class TestSimple(TestCase):
                 {"eq": ["name", {"literal": "abc"}]},
                 {"in": ["id", {"literal": ["1", "2"]}]},
             ]},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -339,7 +339,7 @@ class TestSimple(TestCase):
         result = parse("select * from task where repo.branch.name in ('try', 'mozilla-central')")
         expected = {
             "from": "task",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"in": ["repo.branch.name", {"literal": ["try", "mozilla-central"]}]},
         }
         self.assertEqual(result, expected)
@@ -348,7 +348,7 @@ class TestSimple(TestCase):
         result = parse("select * from task where repo.branch.name not in ('try', 'mozilla-central')")
         expected = {
             "from": "task",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"nin": ["repo.branch.name", {"literal": ["try", "mozilla-central"]}]},
         }
         self.assertEqual(result, expected)
@@ -361,7 +361,7 @@ class TestSimple(TestCase):
                 {"name": "t1", "value": "table1"},
                 {"on": {"eq": ["t1.id", "t3.id"]}, "join": {"name": "t3", "value": "table3"}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -371,7 +371,7 @@ class TestSimple(TestCase):
         result = parse("select * from task where build.product is not null and build.product!='firefox'")
 
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "task",
             "where": {"and": [{"exists": "build.product"}, {"neq": ["build.product", {"literal": "firefox"}]}]},
         }
@@ -579,7 +579,7 @@ class TestSimple(TestCase):
                 {"name": "pi", "value": "person_info"},
                 {"name": "t", "value": "title"},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"and": [
                 {"exists": "an.name"},
                 {"or": [{"like": ["an.name", {"literal": "%a%"}]}, {"like": ["an.name", {"literal": "A%"}]}]},
@@ -625,13 +625,13 @@ class TestSimple(TestCase):
     def test_binary_and(self):
         sql = "SELECT * FROM t WHERE  c & 4;"
         result = parse(sql)
-        expected = {"select": "*", "from": "t", "where": {"binary_and": ["c", 4]}}
+        expected = {"select": {"all_columns": {}}, "from": "t", "where": {"binary_and": ["c", 4]}}
         self.assertEqual(result, expected)
 
     def test_binary_or(self):
         sql = "SELECT * FROM t WHERE c | 4;"
         result = parse(sql)
-        expected = {"select": "*", "from": "t", "where": {"binary_or": ["c", 4]}}
+        expected = {"select": {"all_columns": {}}, "from": "t", "where": {"binary_or": ["c", 4]}}
         self.assertEqual(result, expected)
 
     def test_binary_not(self):
@@ -639,14 +639,14 @@ class TestSimple(TestCase):
         #      012345678901234567890123456789
         sql = "SELECT * FROM t WHERE ~c;"
         result = parse(sql)
-        expected = {"select": "*", "from": "t", "where": {"binary_not": "c"}}
+        expected = {"select": {"all_columns": {}}, "from": "t", "where": {"binary_not": "c"}}
         self.assertEqual(result, expected)
 
     def test_or_and(self):
         sql = "SELECT * FROM dual WHERE a OR b AND c"
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "dual",
             "where": {"or": ["a", {"and": ["b", "c"]}]},
         }
@@ -656,7 +656,7 @@ class TestSimple(TestCase):
         sql = "SELECT * FROM dual WHERE a AND b or c"
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "dual",
             "where": {"or": [{"and": ["a", "b"]}, "c"]},
         }
@@ -716,7 +716,7 @@ class TestSimple(TestCase):
         """
         )
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "MyTable",
             "groupby": {"value": "Col"},
             "having": {"or": [
@@ -747,7 +747,7 @@ class TestSimple(TestCase):
     def test_issue_92(self):
         sql = "SELECT * FROM `movies`"
         result = parse(sql)
-        expected = {"select": "*", "from": "movies"}
+        expected = {"select": {"all_columns": {}}, "from": "movies"}
         self.assertEqual(result, expected)
 
     def test_with_clause(self):
@@ -813,7 +813,7 @@ class TestSimple(TestCase):
                 {"name": "a", "value": {"select": {"value": 1}}},
                 {"name": "b", "value": {"select": {"value": 2}}},
             ],
-            "union_all": [{"select": "*", "from": "a"}, {"select": "*", "from": "b"}],
+            "union_all": [{"select": {"all_columns": {}}, "from": "a"}, {"select": {"all_columns": {}}, "from": "b"}],
         }
         self.assertEqual(result, expected)
 
@@ -871,7 +871,7 @@ class TestSimple(TestCase):
         sql = "select * from some_table.some_function('parameter', 1, some_col)"
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": {"some_table.some_function": [{"literal": "parameter"}, 1, "some_col"]},
         }
         self.assertEqual(result, expected)
@@ -954,7 +954,7 @@ class TestSimple(TestCase):
         sql = "SELECT * FROM a WHERE ((a = 1 AND (b=2 AND c=3, False)))"
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "a",
             "where": {"and": [{"eq": ["a", 1]}, [{"and": [{"eq": ["b", 2]}, {"eq": ["c", 3]}]}, False]]},
         }
@@ -1006,7 +1006,7 @@ class TestSimple(TestCase):
         #      012345678901234567890123456789
         sql = "SELECT * FROM jobs LIMIT 10"
         result = parse(sql)
-        self.assertEqual(result, {"select": "*", "from": "jobs", "limit": 10})
+        self.assertEqual(result, {"select": {"all_columns": {}}, "from": "jobs", "limit": 10})
 
     def test_issue2a_of_fork(self):
         sql = "SELECT COUNT(DISTINCT Y) FROM A "
@@ -1270,7 +1270,7 @@ class TestSimple(TestCase):
         result = parse(sql)
         expected = {"union_all": [
             {"select": [{"value": 1}, {"value": 2}, {"value": 3}]},
-            {"select": "*", "from": "A"},
+            {"select": {"all_columns": {}}, "from": "A"},
         ]}
         self.assertEqual(result, expected)
 
@@ -1367,7 +1367,7 @@ class TestSimple(TestCase):
             p,
             {
                 "from": "AirlineFlights",
-                "select": "*",
+                "select": {"all_columns": {}},
                 "where": {"in": [["origin", "dest"], {"literal": [["ATL", "ABE"], ["DFW", "ABI"]]}]},
             },
         )
@@ -1376,13 +1376,13 @@ class TestSimple(TestCase):
         # https://www.sqltutorial.org/sql-fetch/
         sql = """SELECT * FROM mytable FETCH NEXT 20 ROWS ONLY"""
         result = parse(sql)
-        self.assertEqual(result, {"from": "mytable", "fetch": 20, "select": "*"})
+        self.assertEqual(result, {"from": "mytable", "fetch": 20, "select": {"all_columns": {}}})
 
     def test_issue_70_offset_fetch_next(self):
         # https://www.sqltutorial.org/sql-fetch/
         sql = """SELECT * FROM mytable offset 2 FETCH 10"""
         result = parse(sql)
-        self.assertEqual(result, {"from": "mytable", "offset": 2, "fetch": 10, "select": "*"})
+        self.assertEqual(result, {"from": "mytable", "offset": 2, "fetch": 10, "select": {"all_columns": {}}})
 
     def test_issue_75_comments(self):
         self.assertEqual(parse("/* foo */ SELECT TRUE"), {"select": {"value": True}})
@@ -1419,14 +1419,14 @@ class TestSimple(TestCase):
         result = parse(sql)
         expected = {
             "from": ["t1", {"inner join": "t2", "on": {"eq": ["t1.c1", "t2.c2"]}}],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
     def test_issue_157_describe(self):
         sql = """describe query plan select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}}
         self.assertEqual(result, expected)
 
     def test_issue_174_no_from(self):
