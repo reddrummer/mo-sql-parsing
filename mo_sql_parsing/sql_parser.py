@@ -31,7 +31,7 @@ def mysql_parser():
 
 def sqlserver_parser():
     atomic_ident = ansi_ident | mysql_backtick_ident | sqlserver_ident | simple_ident
-    return parser(regex_string | ansi_string, atomic_ident, sqlserver=True)
+    return parser(regex_string | ansi_string | n_string, atomic_ident, sqlserver=True)
 
 
 def bigquery_parser():

@@ -276,6 +276,7 @@ join_keywords = {
 precedence = {
     # https://www.sqlite.org/lang_expr.html
     "literal": -1,
+    "nliteral": -1,
     "get": 0,
     "interval": 0,
     "cast": 0,
