@@ -630,6 +630,8 @@ def to_struct(tokens):
 
 def to_select_call(tokens):
     expr = tokens["value"]
+    if expr == "*":
+        return ["*"]
     try:
         call = expr[0][0]  # expecting a forward from the expression
         if call.op == "value":

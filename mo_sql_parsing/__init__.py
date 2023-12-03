@@ -8,82 +8,99 @@
 #
 
 
-import json
 from threading import Lock
-
-from mo_parsing import debug
-
-from mo_sql_parsing.sql_parser import scrub
-from mo_sql_parsing.utils import ansi_string, simple_op, normal_op, n_string
+from typing import Mapping
 
 parse_locker = Lock()  # ENSURE ONLY ONE PARSING AT A TIME
-common_parser = None
-mysql_parser = None
-sqlserver_parser = None
-bigquery_parser = None
 
-SQL_NULL = {"null": {}}
+sql_parser = utils = ansi_string = simple_op = normal_op = scrub = None
+common_parser = mysql_parser = sqlserver_parser = bigquery_parser = None
+
+SQL_NULL: Mapping[str, Mapping] = {"null": {}}
 
 
-def parse(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
+def parse(sql, null=SQL_NULL, calls=None, all_columns=None):
     """
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
     :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
+    :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global common_parser
+    global common_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
 
     with parse_locker:
         if not common_parser:
+            from mo_sql_parsing import sql_parser, utils
+            from mo_sql_parsing.sql_parser import scrub
+            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
+
             common_parser = sql_parser.common_parser(all_columns)
-        result = _parse(common_parser, sql, null, calls)
+        result = _parse(common_parser, sql, null, calls or simple_op)
         return result
 
 
-def parse_mysql(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
+def parse_mysql(sql, null=SQL_NULL, calls=None, all_columns=None):
     """
     PARSE MySQL ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
+    :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
+    :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global mysql_parser
+    global mysql_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
 
     with parse_locker:
         if not mysql_parser:
+            from mo_sql_parsing import sql_parser, utils
+            from mo_sql_parsing.sql_parser import scrub
+            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
+
             mysql_parser = sql_parser.mysql_parser(all_columns)
-        return _parse(mysql_parser, sql, null, calls)
+        return _parse(mysql_parser, sql, null, calls or simple_op)
 
 
-def parse_sqlserver(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
+def parse_sqlserver(sql, null=SQL_NULL, calls=None, all_columns=None):
     """
     PARSE MySQL ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
+    :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
+    :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global sqlserver_parser
+    global sqlserver_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
 
     with parse_locker:
         if not sqlserver_parser:
+            from mo_sql_parsing import sql_parser, utils
+            from mo_sql_parsing.sql_parser import scrub
+            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
+
             sqlserver_parser = sql_parser.sqlserver_parser(all_columns)
-        return _parse(sqlserver_parser, sql, null, calls)
+        return _parse(sqlserver_parser, sql, null, calls or simple_op)
 
 
-def parse_bigquery(sql, null=SQL_NULL, calls=simple_op, all_columns=None):
+def parse_bigquery(sql, null=SQL_NULL, calls=None, all_columns=None):
     """
     PARSE BigQuery ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
+    :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
+    :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global bigquery_parser
+    global bigquery_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
 
     with parse_locker:
         if not bigquery_parser:
+            from mo_sql_parsing import sql_parser, utils
+            from mo_sql_parsing.sql_parser import scrub
+            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
+
             bigquery_parser = sql_parser.bigquery_parser(all_columns)
-        return _parse(bigquery_parser, sql, null, calls)
+        return _parse(bigquery_parser, sql, null, calls or simple_op)
 
 
 def _parse(parser, sql, null, calls):
@@ -109,6 +126,4 @@ def format(json, ansi_quotes=True, should_quote=None):
     return Formatter(ansi_quotes, should_quote).dispatch(json)
 
 
-_ = json.dumps
-
-__all__ = ["parse", "format", "parse_mysql", "parse_bigquery", "normal_op", "simple_op"]
+__all__ = ["parse", "format", "parse_mysql", "parse_sqlserver", "parse_bigquery", "normal_op", "simple_op"]

@@ -6,8 +6,13 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+from mo_times import Timer
 
-from mo_sql_parsing import parse, normal_op
+with Timer("import time") as import_time:
+    from mo_sql_parsing import parse, normal_op
+
+if import_time.total.total_seconds()>0.1:
+    raise Exception("importing mo_sql_parsing took too long")
 
 sql = "select trim(' ' from b+c)"
 result = parse(sql, calls=normal_op)

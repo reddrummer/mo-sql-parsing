@@ -163,14 +163,29 @@ for select in listwrap(parsed_result.get('select')):
 
 ### Version 10
 
-*November 2023*
+*December 2023*
 
-SELECT * now emits `all_columns` instead of `*` to avoid confusion with multiplication operator.  The `all_columns` operator is a simple object with no parameters: `{"all_columns":{}}
+`SELECT *` now emits an `all_columns` call instead of plain star (`*`).  
 
-    SELECT * FROM table
-    
-    {"select": {"value": {"all_columns":{}}}, "from": "table"}
+```
+>>> from mo_sql_parsing import parse
+>>> parse("SELECT * FROM table")
+{'select': {'all_columns': {}}, 'from': 'table'}
+```
 
+This works better with the `except` clause, and is more explicit when selecting all child properties.
+
+``` 
+>>> parse("SELECT a.* EXCEPT b FROM table")
+>>> {"select": {"all_columns":"a", "except": "b"}, "from": "table"}
+```
+
+You may get the original behaviour with `all_columns="*"`:
+
+```
+>>> parse("SELECT * FROM table", all_columns="*")
+{'select': "*", 'from': 'table'}
+```
 
 
 ### Version 9

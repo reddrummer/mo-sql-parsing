@@ -11,7 +11,7 @@ from unittest import TestCase
 
 from mo_parsing.debug import Debugger
 
-from mo_sql_parsing import parse, parse_mysql, format
+from mo_sql_parsing import parse, parse_mysql, format, common_parser, sql_parser, _parse, SQL_NULL, simple_op
 
 try:
     from tests.util import assertRaises
@@ -1467,4 +1467,12 @@ class TestSimple(TestCase):
         }
 
         result = parse(sql)
+        self.assertEqual(result, expected)
+
+    def test_using_all_column_star(self):
+        sql = "select * from a join b using (*)"
+        mysql_parser = sql_parser.mysql_parser(all_columns="*")
+        result = _parse(mysql_parser, sql, null=SQL_NULL, calls=simple_op)
+
+        expected = {"from": [ "a", {"join": "b", "using": "*"}], "select": "*"}
         self.assertEqual(result, expected)
