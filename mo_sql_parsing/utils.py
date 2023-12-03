@@ -719,6 +719,11 @@ def to_query(tokens):
         return
 
 
+def no_op(tokens):
+    scrub(tokens)
+    return tokens
+
+
 def to_table(tokens):
     output = dict(tokens)
     if len(list(output.keys())) > 1:

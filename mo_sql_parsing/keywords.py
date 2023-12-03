@@ -10,7 +10,13 @@
 # SQL CONSTANTS
 from mo_parsing import *
 
-from mo_sql_parsing.utils import SQL_NULL, keyword
+from mo_sql_parsing.utils import SQL_NULL
+
+
+def keyword(name):
+    return Keyword(name, caseless=True)
+
+
 
 NULL = keyword("null") / SQL_NULL
 TRUE = keyword("true") / True

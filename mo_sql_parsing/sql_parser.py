@@ -434,7 +434,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         unordered_sql = Group(
             (values | selection)
-            + Optional((FROM + delimited_list(table_source) + ZeroOrMore(join))("from"))
+            + Optional((FROM + delimited_list(table_source) / no_op + ZeroOrMore(join))("from")) / no_op
             + Optional(WHERE + expression("where"))
             + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
             + (
