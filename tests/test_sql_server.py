@@ -260,3 +260,9 @@ class TestSqlServer(TestCase):
         result = parse(sql)
         expected = {"from": "A", "orderby": {"value": "relevance"}, "select": {"value": "Column"}, "top": 10}
         self.assertEqual(result, expected)
+
+    def test_nliteral_parse(self):
+            sql = """SELECT * FROM dbo.table WHERE a = N'Something'"""
+            result = parse(sql)
+            expected = {'select': '*', 'from': 'dbo.table', 'where': {'eq': ['a', {'nliteral': 'Something'}]}}
+            self.assertEqual(result, expected)

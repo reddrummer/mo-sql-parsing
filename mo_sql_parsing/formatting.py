@@ -157,7 +157,7 @@ class Formatter:
     _except = Operator("except")
 
     def __init__(self, ansi_quotes=True, should_quote=None):
-        self.quote_char = '"' if ansi_quotes else '`'
+        self.quote_char = '"' if ansi_quotes else "`"
         self.should_quote = should_quote or _should_quote
 
     def format(self, json):
@@ -437,6 +437,16 @@ class Formatter:
         elif isinstance(json, string_types):
             body = json.replace("'", "''")
             return f"'{body}'"
+        else:
+            return str(json)
+
+    def _nliteral(self, json, prec=0):
+        if isinstance(json, list):
+            body = ", ".join(self._nliteral(v, precedence["nliteral"]) for v in json)
+            return f"({body})"
+        elif isinstance(json, string_types):
+            body = json.replace("'", "''")
+            return f"N'{body}'"
         else:
             return str(json)
 

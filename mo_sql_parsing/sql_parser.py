@@ -31,7 +31,13 @@ def mysql_parser():
 
 def sqlserver_parser():
     atomic_ident = ansi_ident | mysql_backtick_ident | sqlserver_ident | simple_ident
-    return parser(regex_string | ansi_string, atomic_ident, sqlserver=True)
+    return parser(regex_string | ansi_string | n_string, atomic_ident, sqlserver=True)
+
+
+def bigquery_parser():
+    mysql_string = regex_string | ansi_string | mysql_doublequote_string
+    atomic_ident = ansi_ident | mysql_backtick_ident | simple_ident
+    return parser(mysql_string, atomic_ident)
 
 
 def parser(literal_string, simple_ident, sqlserver=False):
@@ -75,7 +81,14 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         casting = MatchFirst([
             (
-                Group(Keyword(c, caseless=True)("op") + LB + expression("params") + Optional(AS | comma) + column_type("params") + RB)
+                Group(
+                    Keyword(c, caseless=True)("op")
+                    + LB
+                    + expression("params")
+                    + Optional(AS | comma)
+                    + column_type("params")
+                    + RB
+                )
                 / to_json_call
             )
             for c in ["cast", "safe_cast", "try_cast", "validate_conversion", "convert"]
@@ -242,7 +255,8 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         create_map = (keyword("map") + LK + expression("keys") + "," + expression("values") + RK) / to_map
 
-        select_column = Group(expression("value") + alias | Literal("*")("value")) / to_select_call
+        # select_column = Group(Literal("*")("all_columns")/{} | expression("value") + alias) / to_select_call
+        select_column = Group(Literal("*")("value") | expression("value") + alias) / to_select_call
 
         create_struct = (
             keyword("struct")("op")
@@ -397,16 +411,20 @@ def parser(literal_string, simple_ident, sqlserver=False):
             / to_top_clause
         )
 
+        except_columns = Group(
+            (ident("from") + ".*" | Literal("*") / {})("all_columns")
+            + EXCEPT.suppress()
+            + LB
+            + delimited_list(ident)("except")
+            + RB
+        )
         selection = (
-            (SELECT + "*" + EXCEPT.suppress()) + (LB + delimited_list(select_column)("select_except") + RB)
-            + Optional(comma + delimited_list(select_column)("select"))
-            | (SELECT + DISTINCT + ON)
-            + (LB + delimited_list(select_column)("distinct_on") + RB)
+            (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)
             + delimited_list(select_column)("select")
             | assign("select distinct", delimited_list(select_column))
             | assign("select as struct", delimited_list(select_column))
             | assign("select as value", delimited_list(select_column))
-            | SELECT + tops + delimited_list(select_column)("select")
+            | SELECT + tops + delimited_list(except_columns | select_column)("select")
         ) + comma
 
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
@@ -416,7 +434,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         unordered_sql = Group(
             (values | selection)
-            + Optional((FROM + delimited_list(table_source) + ZeroOrMore(join))("from"))
+            + Optional((FROM + delimited_list(table_source) / no_op + ZeroOrMore(join))("from")) / no_op
             + Optional(WHERE + expression("where"))
             + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
             + (

@@ -39,8 +39,17 @@ from mo_sql_parsing.keywords import (
     GT,
     AS,
 )
-from mo_sql_parsing.utils import keyword, to_json_call, int_num, ansi_string, ansi_ident, assign, flag, simple_ident, \
-    to_flat_column_type
+from mo_sql_parsing.utils import (
+    keyword,
+    to_json_call,
+    int_num,
+    ansi_string,
+    ansi_ident,
+    assign,
+    flag,
+    simple_ident,
+    to_flat_column_type,
+)
 
 _size = Optional(LB + int_num("params") + RB)
 _char_set = Optional(assign("character set", simple_ident))
@@ -200,9 +209,7 @@ def get_column_type(expr, identifier, literal_string):
     column_type = Forward()
 
     # eg  AS STRING FORMAT 'YYYY-MM'
-    string_type = (
-        keyword("string format")("op") + literal_string("params")
-    )/ to_json_call
+    string_type = (keyword("string format")("op") + literal_string("params")) / to_json_call
 
     struct_type = (
         keyword("struct")("op") + LT.suppress() + Group(delimited_list(column_definition))("params") + GT.suppress()
@@ -250,7 +257,9 @@ def get_column_type(expr, identifier, literal_string):
         | assign("on update", expr)
     )
 
-    column_definition << Group(identifier("name") + (column_type | identifier("type")) + ZeroOrMore(column_options)) / to_flat_column_type
+    column_definition << Group(
+        identifier("name") + (column_type | identifier("type")) + ZeroOrMore(column_options)
+    ) / to_flat_column_type
 
     set_parser_names()
 

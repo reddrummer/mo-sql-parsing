@@ -459,7 +459,7 @@ class TestBigQuery(TestCase):
 
     def test_issue_99_select_except(self):
         result = parse("SELECT * EXCEPT(x) FROM `a.b.c`")
-        expected = {"from": "a..b..c", "select_except": {"value": "x"}}
+        expected = {"from": "a..b..c", "select":{"all_columns":{}, "except": "x"}}
         self.assertEqual(result, expected)
 
     def test_unnest(self):
@@ -1500,8 +1500,10 @@ class TestBigQuery(TestCase):
         result = parse(query)
         expected = {
             "from": "raw_data",
-            "select": {"name": "new_col", "value": {"add": ["col3", "col1"]}},
-            "select_except": {"value": "col3"},
+            "select": [
+                {"all_columns": {}, "except": "col3"},
+                {"name": "new_col", "value": {"add": ["col3", "col1"]}},
+            ],
             "with": {
                 "name": "raw_data",
                 "value": {
@@ -1553,4 +1555,59 @@ class TestBigQuery(TestCase):
             },
             "select": "*",
         }
+        self.assertEqual(result, expected)
+
+    def test_issue_214(self):
+        sql = """
+            select 
+                raw_data.* except(col3),
+                col3 + col1 as new_col
+            from raw_data
+        """
+        result = parse(sql)
+        expected = {
+            "from": "raw_data",
+            "select": [
+                {"all_columns": {"from": "raw_data"}, "except": "col3"},
+                {"name": "new_col", "value": {"add": ["col3", "col1"]}},
+            ],
+        }
+        self.assertEqual(result, expected)
+
+    def test_issue_215(self):
+        sql = """
+            select 
+                col3 + col1 as new_col,
+                * except(col3)
+            from raw_data
+        """
+        result = parse(sql)
+        expected = {
+            "from": "raw_data",
+            "select": [{"name": "new_col", "value": {"add": ["col3", "col1"]}}, {"all_columns": {}, "except": "col3"}],
+        }
+        self.assertEqual(result, expected)
+
+    @skip("TODO")
+    def test_issue_216(self):
+        sql = """
+            with raw_data as (
+            select 
+                    * 
+            from UNNEST(GENERATE_ARRAY(1, 2)) as col1
+            ),
+            raw_data2 as (
+            select 
+            *, 
+            1 as cn1, 
+            2 as cn2, 
+            from UNNEST(GENERATE_ARRAY(1, 2)) as col2
+            )
+            select 
+                *
+            from raw_data
+            left join raw_data2 on raw_data.col1 = raw_data2.col2, unnest ([raw_data2.cn1, raw_data2.cn2]) as unnested_res
+        """
+        result = parse(sql)
+        expected = {}
         self.assertEqual(result, expected)
