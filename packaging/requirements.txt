@@ -1,4 +1,4 @@
 mo-future
 mo-dots
-mo-parsing
+mo-parsing==8.460.23319
 mo-imports
