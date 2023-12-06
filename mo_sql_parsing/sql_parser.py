@@ -411,20 +411,16 @@ def parser(literal_string, simple_ident, sqlserver=False):
             / to_top_clause
         )
 
-        except_columns = Group(
-            (ident("from") + ".*" | Literal("*") / {})("all_columns")
-            + EXCEPT.suppress()
-            + LB
-            + delimited_list(ident)("except")
-            + RB
-        )
         selection = (
-            (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)
+            (SELECT + "*" + EXCEPT.suppress()) + (LB + delimited_list(select_column)("select_except") + RB)
+            + Optional(comma + delimited_list(select_column)("select"))
+            | (SELECT + DISTINCT + ON)
+            + (LB + delimited_list(select_column)("distinct_on") + RB)
             + delimited_list(select_column)("select")
             | assign("select distinct", delimited_list(select_column))
             | assign("select as struct", delimited_list(select_column))
             | assign("select as value", delimited_list(select_column))
-            | SELECT + tops + delimited_list(except_columns | select_column)("select")
+            | SELECT + tops + delimited_list(select_column)("select")
         ) + comma
 
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
@@ -434,7 +430,7 @@ def parser(literal_string, simple_ident, sqlserver=False):
 
         unordered_sql = Group(
             (values | selection)
-            + Optional((FROM + delimited_list(table_source) / no_op + ZeroOrMore(join))("from")) / no_op
+            + Optional((FROM + delimited_list(table_source) + ZeroOrMore(join))("from"))
             + Optional(WHERE + expression("where"))
             + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
             + (
