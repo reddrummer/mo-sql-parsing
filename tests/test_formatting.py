@@ -814,8 +814,13 @@ class TestSimple(TestCase):
         result = format(parse(sql))
         self.assertEqual(result, expected)
 
-
     def test_nliteral_format(self):
         sql = "SELECT * FROM dbo.table WHERE a = N'Something'"
         result = format(parse_sqlserver(sql))
         self.assertEqual(result, sql)
+
+    def test_issue_217(self):
+        sql = """SELECT * FROM `dataset_field`  where dataset_field.`id` in (NULL)"""
+        result = format(parse(sql))
+        expected = """SELECT * FROM dataset_field WHERE dataset_field.id IN (NULL)"""
+        self.assertEqual(result, expected)
