@@ -8,7 +8,7 @@
 #
 from mo_times import Timer
 
-with Timer("import time") as import_time:
+with Timer("import time", verbose=True) as import_time:
     from mo_sql_parsing import parse, normal_op
 
 if import_time.total.total_seconds()>0.1:
