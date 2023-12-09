@@ -1473,3 +1473,19 @@ class TestSimple(TestCase):
 
         expected = {"from": [ "a", {"join": "b", "using": "*"}], "select": "*"}
         self.assertEqual(result, expected)
+
+    def test_all_columns_is_column(self):
+        sql = "select all_columns, * from a"
+        result = parse(sql)
+        expected = {"from": "a", "select": [{"value": "all_columns"}, {"all_columns":{}}]}
+        self.assertEqual(result, expected)
+        new_sql = format(result)
+        self.assertEqual(new_sql, "SELECT all_columns, * FROM a")
+
+    def test_from_many_tables(self):
+        sql = "select * from a, b, c"
+        result = parse(sql)
+        expected = {"from": ["a", "b", "c"], "select": {"all_columns": {}}}
+        self.assertEqual(result, expected)
+        new_sql = format(result)
+        self.assertEqual(new_sql, "SELECT * FROM a, b, c")

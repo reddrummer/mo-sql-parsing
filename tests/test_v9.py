@@ -53,9 +53,7 @@ class TestV9(TestCase):
         }
         self.verify_formatting(expected_sql, expected_json)
 
-
     def test_issue_99_select_except(self):
-      with Debugger():
         result = parse("SELECT * EXCEPT(x) FROM `a.b.c`")
         expected = {"from": "a..b..c", "select_except": {"value": "x"}}
         self.assertEqual(result, expected)
@@ -93,4 +91,3 @@ class TestV9(TestCase):
         }
 
         self.assertEqual(result, expected)
-
