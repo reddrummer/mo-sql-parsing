@@ -8,12 +8,12 @@
 #
 from unittest import skip
 
-from mo_parsing.debug import Debugger
-from mo_testing.fuzzytestcase import FuzzyTestCase
+from mo_testing.fuzzytestcase import FuzzyTestCase, add_error_reporting
 
 from mo_sql_parsing import parse, format, parse_mysql
 
 
+@add_error_reporting
 class TestErrors(FuzzyTestCase):
     def test_dash_in_tablename(self):
         #          012345678901234567890123456789012345678901234567890123456789
