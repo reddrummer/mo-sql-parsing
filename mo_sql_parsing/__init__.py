@@ -11,33 +11,33 @@
 from threading import Lock
 from typing import Mapping
 
+from mo_dots import listwrap, Data, from_data
+
 parse_locker = Lock()  # ENSURE ONLY ONE PARSING AT A TIME
 
-sql_parser = utils = ansi_string = simple_op = normal_op = scrub = None
-common_parser = mysql_parser = sqlserver_parser = bigquery_parser = None
+sql_parser = _utils = ansi_string = scrub = None
+parsers= {
+    "common_parser": {},
+    "mysql_parser": {},
+    "sqlserver_parser": {},
+    "bigquery_parser": {}
+}
 
 SQL_NULL: Mapping[str, Mapping] = {"null": {}}
 
 
 def parse(sql, null=SQL_NULL, calls=None, all_columns=None):
     """
+    GENERIC SQL PARSER. CHOSE ANOTHER IF YOU KNOW THE DIALECT
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
     :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
     :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global common_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
-
     with parse_locker:
-        if not common_parser:
-            from mo_sql_parsing import sql_parser, utils
-            from mo_sql_parsing.sql_parser import scrub
-            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
-
-            common_parser = sql_parser.common_parser(all_columns)
-        result = _parse(common_parser, sql, null, calls or simple_op)
-        return result
+        parser = _get_or_create_parser("common_parser", all_columns)
+        return _parse(parser, sql, null, calls or simple_op)
 
 
 def parse_mysql(sql, null=SQL_NULL, calls=None, all_columns=None):
@@ -49,67 +49,59 @@ def parse_mysql(sql, null=SQL_NULL, calls=None, all_columns=None):
     :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global mysql_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
-
     with parse_locker:
-        if not mysql_parser:
-            from mo_sql_parsing import sql_parser, utils
-            from mo_sql_parsing.sql_parser import scrub
-            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
-
-            mysql_parser = sql_parser.mysql_parser(all_columns)
-        return _parse(mysql_parser, sql, null, calls or simple_op)
+        parser = _get_or_create_parser("mysql_parser", all_columns)
+        return _parse(parser, sql, null, calls or simple_op)
 
 
 def parse_sqlserver(sql, null=SQL_NULL, calls=None, all_columns=None):
     """
-    PARSE MySQL ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
+    PARSE SqlServer ASSUME SQUARE BRACKETS ARE VARIABLE NAMES
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
     :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
     :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global sqlserver_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
-
     with parse_locker:
-        if not sqlserver_parser:
-            from mo_sql_parsing import sql_parser, utils
-            from mo_sql_parsing.sql_parser import scrub
-            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
-
-            sqlserver_parser = sql_parser.sqlserver_parser(all_columns)
-        return _parse(sqlserver_parser, sql, null, calls or simple_op)
+        parser = _get_or_create_parser("sqlserver_parser", all_columns)
+        return _parse(parser, sql, null, calls or simple_op)
 
 
 def parse_bigquery(sql, null=SQL_NULL, calls=None, all_columns=None):
     """
-    PARSE BigQuery ASSUME DOUBLE QUOTED STRINGS ARE LITERALS
+    PARSE BigQuery ASSUME DOUBLE QUOTED STRINGS ARE LITERALS, AND SQUARE BRACKETS ARE LISTS
     :param sql: String of SQL
     :param null: What value to use as NULL (default is the null function `{"null":{}}`)
     :param calls: What to do with function calls (default is the simple_op function `{"op":{}}`)
     :param all_columns: use all_columns="*" for old behaviour (see version 10)
     :return: parse tree
     """
-    global bigquery_parser, sql_parser, utils, ansi_string, simple_op, normal_op, scrub
-
     with parse_locker:
-        if not bigquery_parser:
-            from mo_sql_parsing import sql_parser, utils
-            from mo_sql_parsing.sql_parser import scrub
-            from mo_sql_parsing.utils import ansi_string, simple_op, normal_op
+        parser = _get_or_create_parser("bigquery_parser", all_columns)
+        return _parse(parser, sql, null, calls or simple_op)
 
-            bigquery_parser = sql_parser.bigquery_parser(all_columns)
-        return _parse(bigquery_parser, sql, null, calls or simple_op)
+
+def _get_or_create_parser(parser_name, all_columns=None):
+    global sql_parser, _utils, ansi_string, scrub
+
+    parser = parsers[parser_name].get(all_columns)
+    if not parser:
+        from mo_sql_parsing import sql_parser, utils as _utils
+        from mo_sql_parsing.sql_parser import scrub
+        from mo_sql_parsing.utils import ansi_string
+
+        parser = parsers[parser_name][all_columns] = getattr(sql_parser, parser_name)(all_columns)
+    return parser
 
 
 def _parse(parser, sql, null, calls):
-    utils.null_locations = []
-    utils.scrub_op = calls
+    _utils.null_locations = []
+    _utils.scrub_op = calls
     sql = sql.rstrip().rstrip(";")
     parse_result = parser.parse_string(sql, parse_all=True)
     output = scrub(parse_result)
-    for o, n in utils.null_locations:
+    for o, n in _utils.null_locations:
         o[n] = null
     return output
 
@@ -126,4 +118,21 @@ def format(json, ansi_quotes=True, should_quote=None):
     return Formatter(ansi_quotes, should_quote).dispatch(json)
 
 
-__all__ = ["parse", "format", "parse_mysql", "parse_sqlserver", "parse_bigquery", "normal_op", "simple_op"]
+def simple_op(op, args, kwargs):
+    if args is None:
+        kwargs[op] = {}
+    else:
+        kwargs[op] = args
+    return kwargs
+
+
+def normal_op(op, args, kwargs):
+    output = Data(op=op)
+    args = listwrap(args)
+    if args and (not isinstance(args[0], dict) or args[0]):
+        output.args = args
+    if kwargs:
+        output.kwargs = kwargs
+    return from_data(output)
+
+__all__ = ["parse", "format", "parse_mysql", "parse_sqlserver", "parse_bigquery", "normal_op", "simple_op", "SQL_NULL"]
