@@ -257,16 +257,9 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
         if all_columns == "*":
             select_column = Group(Literal("*")("value") | expression("value") + alias) / to_select_call
-            except_columns = Group(
-                (Literal("*") / {} | ident + Suppress(".*"))("all_columns")
-                + (EXCEPT.suppress() + LB + delimited_list(ident)("except") + RB)
-            )
         else:
             select_column = Group(expression("value") + alias) / to_select_call
-            except_columns = Group(
-                (Literal("*") / {} | ident + Suppress(".*"))("all_columns")
-                + Optional(EXCEPT.suppress() + LB + delimited_list(ident)("except") + RB)
-            )
+
         create_struct = (
             keyword("struct")("op")
             + Optional(LT.suppress() + delimited_list(column_type)("types") + GT.suppress())
@@ -420,14 +413,33 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             / to_top_clause
         )
 
-        selection = (
-            (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)
-            + delimited_list(select_column)("select")
-            | assign("select distinct", delimited_list(select_column))
-            | assign("select as struct", delimited_list(select_column))
-            | assign("select as value", delimited_list(select_column))
-            | SELECT + tops + delimited_list(except_columns | select_column)("select")
-        ) + comma
+        if all_columns:
+            selection = (
+                (SELECT + "*" + EXCEPT.suppress())
+                + (LB + delimited_list(select_column)("select_except") + RB)
+                + Optional(comma + delimited_list(select_column)("select"))
+                | (SELECT + DISTINCT + ON)
+                + (LB + delimited_list(select_column)("distinct_on") + RB)
+                + delimited_list(select_column)("select")
+                | assign("select distinct", delimited_list(select_column))
+                | assign("select as struct", delimited_list(select_column))
+                | assign("select as value", delimited_list(select_column))
+                | SELECT + tops + delimited_list(select_column)("select")
+            ) + comma
+        else:
+            except_columns = Group(
+                (Literal("*") / {} | ident + Suppress(".*"))("all_columns")
+                + Optional(EXCEPT.suppress() + LB + delimited_list(ident)("except") + RB)
+            )
+
+            selection = (
+                (SELECT + DISTINCT + ON + LB + delimited_list(select_column)("distinct_on") + RB)
+                + delimited_list(select_column)("select")
+                | assign("select distinct", delimited_list(select_column))
+                | assign("select as struct", delimited_list(select_column))
+                | assign("select as value", delimited_list(select_column))
+                | SELECT + tops + delimited_list(except_columns | select_column)("select")
+            ) + comma
 
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
         values = (VALUES + delimited_list(row)) / to_values

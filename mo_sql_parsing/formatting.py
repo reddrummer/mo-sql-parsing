@@ -583,6 +583,9 @@ class Formatter:
         select = json["select"]
         acc = []
         for s in listwrap(select):
+            if s == "*":
+                acc.append("*")
+                continue
             all_col = s.get("all_columns")
             if all_col or isinstance(all_col, dict):
                 acc.append(self.all_columns(s, precedence["select"]))

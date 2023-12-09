@@ -16,11 +16,12 @@ from mo_dots import listwrap, Data, from_data
 parse_locker = Lock()  # ENSURE ONLY ONE PARSING AT A TIME
 
 sql_parser = _utils = ansi_string = scrub = None
-parsers= {
-    "common_parser": {},
-    "mysql_parser": {},
-    "sqlserver_parser": {},
-    "bigquery_parser": {}
+
+lookup_parsers = {
+    "common_parser": {"*": None, None: None},
+    "mysql_parser": {"*": None, None: None},
+    "sqlserver_parser": {"*": None, None: None},
+    "bigquery_parser": {"*": None, None: None},
 }
 
 SQL_NULL: Mapping[str, Mapping] = {"null": {}}
@@ -84,15 +85,17 @@ def parse_bigquery(sql, null=SQL_NULL, calls=None, all_columns=None):
 
 def _get_or_create_parser(parser_name, all_columns=None):
     global sql_parser, _utils, ansi_string, scrub
+    try:
+        parser = lookup_parsers[parser_name][all_columns]
+        if not parser:
+            from mo_sql_parsing import sql_parser, utils as _utils
+            from mo_sql_parsing.sql_parser import scrub
+            from mo_sql_parsing.utils import ansi_string
 
-    parser = parsers[parser_name].get(all_columns)
-    if not parser:
-        from mo_sql_parsing import sql_parser, utils as _utils
-        from mo_sql_parsing.sql_parser import scrub
-        from mo_sql_parsing.utils import ansi_string
-
-        parser = parsers[parser_name][all_columns] = getattr(sql_parser, parser_name)(all_columns)
-    return parser
+            parser = lookup_parsers[parser_name][all_columns] = getattr(sql_parser, parser_name)(all_columns)
+        return parser
+    except Exception as cause:
+        raise Exception("Expecting all_columns to be None or '*'") from cause
 
 
 def _parse(parser, sql, null, calls):
@@ -134,5 +137,6 @@ def normal_op(op, args, kwargs):
     if kwargs:
         output.kwargs = kwargs
     return from_data(output)
+
 
 __all__ = ["parse", "format", "parse_mysql", "parse_sqlserver", "parse_bigquery", "normal_op", "simple_op", "SQL_NULL"]
