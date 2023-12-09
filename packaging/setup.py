@@ -6,7 +6,7 @@ setup(
     author_email='kyle@lahnakoski.com',
     classifiers=["Development Status :: 5 - Production/Stable","Topic :: Software Development :: Libraries","Topic :: Software Development :: Libraries :: Python Modules","Programming Language :: SQL","Programming Language :: Python :: 3.8","Programming Language :: Python :: 3.9","License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)","Programming Language :: Python :: 3.10","Programming Language :: Python :: 3.11"],
     description='More SQL Parsing! Parse SQL into JSON parse tree',
-    extras_require={"dev":[],"tests":["mo-testing","mo-threads","mo-files","mo-streams","zstandard"]},
+    extras_require={"dev":[],"tests":["mo-testing","mo-threads","mo-files","mo-streams","mo-times","zstandard"]},
     include_package_data=True,
     install_requires=["mo-dots==9.455.23316","mo-future==7.449.23304","mo-imports==7.449.23304","mo-parsing==8.460.23319"],
     license='MPL 2.0',
