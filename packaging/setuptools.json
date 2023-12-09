@@ -15,7 +15,10 @@
     "description": "More SQL Parsing! Parse SQL into JSON parse tree",
     "extras_require": {
         "dev": [],
-        "tests": ["mo-testing", "mo-threads", "mo-files", "mo-streams", "zstandard"]
+        "tests": [
+            "mo-testing", "mo-threads",   "mo-files", "mo-streams",   "mo-times",
+             "zstandard"
+        ]
     },
     "include_package_data": true,
     "install_requires": [
