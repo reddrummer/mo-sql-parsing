@@ -174,9 +174,9 @@ class TestPostgres(TestCase):
         expected = {
             "from": [
                 {"name": "d", "value": "departments"},
-                {"lateral": {"name": "iv2", "value": {"from": "employees", "select": "*"}}},
+                {"lateral": {"name": "iv2", "value": {"from": "employees", "select": {"all_columns": {}}}}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -197,7 +197,7 @@ class TestPostgres(TestCase):
                     "on": True,
                 },
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -225,7 +225,7 @@ class TestPostgres(TestCase):
         expected = {
             "from": "bmsql_config",
             "locking": {"mode": "update"},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -233,7 +233,7 @@ class TestPostgres(TestCase):
         sql = """select * from bmsql_config for update of bmsql_config nowait;"""
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "bmsql_config",
             "locking": {"mode": "update", "table": {"value": "bmsql_config", "nowait": True}},
         }
@@ -379,9 +379,9 @@ class TestPostgres(TestCase):
         SELECT * FROM delta;"""
         result = parse(sql)
         expect = {
-            "with": {"name": "delta", "value": {"from": "ta", "select": "*"}},
+            "with": {"name": "delta", "value": {"from": "ta", "select": {"all_columns": {}}}},
             "insert": "tb",
-            "query": {"from": "delta", "select": "*"},
+            "query": {"from": "delta", "select": {"all_columns": {}}},
         }
         self.assertEqual(result, expect)
 
@@ -426,7 +426,7 @@ class TestPostgres(TestCase):
         sql = """explain (analyze, verbose true, costs 1, settings on, buffers false, wal 0, timing off, summary) select * from temp"""
         result = parse(sql)
         expected = {
-            "explain": {"from": "temp", "select": "*"},
+            "explain": {"from": "temp", "select": {"all_columns": {}}},
             "analyze": True,
             "buffers": False,
             "costs": True,
@@ -441,32 +441,36 @@ class TestPostgres(TestCase):
     def test_issue_157_describe2(self):
         sql = """explain (format text) select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "format": "text"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "format": "text"}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe3(self):
         sql = """explain (format xml) select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "format": "xml"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "format": "xml"}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe4(self):
         sql = """explain (format yaml) select * from temp"""
         result = parse(sql)
-        expected = {"explain": {"from": "temp", "select": "*"}, "format": "yaml"}
+        expected = {"explain": {"from": "temp", "select": {"all_columns": {}}}, "format": "yaml"}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe5(self):
         sql = """EXPLAIN SELECT * FROM foo, bar WHERE id = fkey"""
         result = parse(sql)
-        expected = {"explain": {"from": ["foo", "bar"], "select": "*", "where": {"eq": ["id", "fkey"]}}}
+        expected = {"explain": {
+            "from": ["foo", "bar"],
+            "select": {"all_columns": {}},
+            "where": {"eq": ["id", "fkey"]},
+        }}
         self.assertEqual(result, expected)
 
     def test_issue_157_describe6(self):
         sql = """EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM foo, bar WHERE id = fkey"""
         result = parse(sql)
         expected = {
-            "explain": {"from": ["foo", "bar"], "select": "*", "where": {"eq": ["id", "fkey"]}},
+            "explain": {"from": ["foo", "bar"], "select": {"all_columns": {}}, "where": {"eq": ["id", "fkey"]}},
             "analyze": True,
             "format": "json",
         }

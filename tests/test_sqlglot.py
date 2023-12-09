@@ -242,7 +242,7 @@ class TestSqlGlot(TestCase):
         sql = """SELECT * FROM ((SELECT 1) AS a UNION ALL (SELECT 2) AS b)"""
         result = parse(sql)
         expected = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": {"union_all": [
                 {"from": {"value": {"select": 1}, "name": "a"}},
                 {"from": {"value": {"select": 2}, "name": "b"}},
@@ -260,7 +260,7 @@ class TestSqlGlot(TestCase):
     def test_issue_46_sqlglot_29(self):
         sql = """VALUES (1) UNION SELECT * FROM x"""
         result = parse(sql)
-        expected = {"union": [{"select": {"value": 1}}, {"from": "x", "select": "*"}]}
+        expected = {"union": [{"select": {"value": 1}}, {"from": "x", "select": {"all_columns": {}}}]}
         self.assertEqual(result, expected)
 
     def test_issue_46_sqlglot_30(self):
@@ -309,7 +309,7 @@ class TestSqlGlot(TestCase):
                     "with": {"name": "y", "value": {"select": {"name": "z", "value": 1}}},
                 },
             },
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -463,7 +463,7 @@ class TestSqlGlot(TestCase):
                 {"name": "t", "value": {"select": {"value": 0}}},
                 {"lateral view": {"name": "tf", "value": {"stack": 2, "width": 1}}},
             ],
-            "select": {"value": "tf.*"},
+            "select": {"all_columns": "tf"},
         }
         self.assertEqual(result, expected)
 
@@ -475,7 +475,7 @@ class TestSqlGlot(TestCase):
                 {"name": "t", "value": {"select": {"value": 0}}},
                 {"lateral view": {"name": {"tf": ["col0", "col1", "col2"]}, "value": {"stack": 2, "width": 1}}},
             ],
-            "select": {"value": "tf.*"},
+            "select": {"all_columns": "tf"},
         }
         self.assertEqual(result, expected)
 
@@ -545,13 +545,18 @@ class TestSqlGlot(TestCase):
     def test_issue_46_sqlglot_59(self):
         sql = """CREATE OR REPLACE VIEW x AS SELECT *"""
         result = parse(sql)
-        expected = {"create view": {"name": "x", "query": {"select": "*"}, "replace": True}}
+        expected = {"create view": {"name": "x", "query": {"select": {"all_columns": {}}}, "replace": True}}
         self.assertEqual(result, expected)
 
     def test_issue_46_sqlglot_60(self):
         sql = """CREATE OR REPLACE TEMPORARY VIEW x AS SELECT *"""
         result = parse(sql)
-        expected = {"create view": {"name": "x", "query": {"select": "*"}, "replace": True, "temporary": True}}
+        expected = {"create view": {
+            "name": "x",
+            "query": {"select": {"all_columns": {}}},
+            "replace": True,
+            "temporary": True,
+        }}
         self.assertEqual(result, expected)
 
     def test_issue_46_sqlglot_61(self):
@@ -576,7 +581,11 @@ class TestSqlGlot(TestCase):
         result = parse(sql)
         expected = {"create view": {
             "name": "x",
-            "query": {"from": "y", "select": "*", "with": {"name": "y", "value": {"select": {"value": 1}}}},
+            "query": {
+                "from": "y",
+                "select": {"all_columns": {}},
+                "with": {"name": "y", "value": {"select": {"value": 1}}},
+            },
             "temporary": True,
         }}
         self.assertEqual(result, expected)
@@ -720,7 +729,7 @@ class TestSqlGlot(TestCase):
             "options": {"storageLevel": "value"},
             "query": {
                 "from": "a",
-                "select": {"value": "a.*"},
+                "select": {"all_columns": "a"},
                 "with": {"name": "a", "value": {"select": {"value": 1}}},
             },
         }}
@@ -734,7 +743,7 @@ class TestSqlGlot(TestCase):
             "name": "x",
             "query": {
                 "from": "a",
-                "select": {"value": "a.*"},
+                "select": {"all_columns": "a"},
                 "with": {"name": "a", "value": {"select": {"value": 1}}},
             },
         }}
@@ -747,7 +756,7 @@ class TestSqlGlot(TestCase):
             "name": "x",
             "query": {
                 "from": "a",
-                "select": {"value": "a.*"},
+                "select": {"all_columns": "a"},
                 "with": {"name": "a", "value": {"select": {"value": 1}}},
             },
         }}
@@ -831,7 +840,7 @@ class TestSqlGlot(TestCase):
     def test_issue_46_sqlglot_91(self):
         sql = """INSERT INTO TABLE x SELECT * FROM y"""
         result = parse(sql)
-        expected = {"insert": "x", "query": {"from": "y", "select": "*"}}
+        expected = {"insert": "x", "query": {"from": "y", "select": {"all_columns": {}}}}
         self.assertEqual(result, expected)
 
     def test_issue_46_sqlglot_92(self):
@@ -840,7 +849,7 @@ class TestSqlGlot(TestCase):
         expected = {
             "insert": "x.z",
             "if_exists": True,
-            "query": {"from": "y", "select": "*"},
+            "query": {"from": "y", "select": {"all_columns": {}}},
         }
         self.assertEqual(result, expected)
 
@@ -873,7 +882,7 @@ class TestSqlGlot(TestCase):
             "insert": "x",
             "if_exists": True,
             "overwrite": True,
-            "query": {"from": "y", "select": "*"},
+            "query": {"from": "y", "select": {"all_columns": {}}},
         }
         self.assertEqual(result, expected)
 
@@ -884,7 +893,7 @@ class TestSqlGlot(TestCase):
             "insert": "a.b",
             "if_exists": True,
             "overwrite": True,
-            "query": {"from": "y", "select": "*"},
+            "query": {"from": "y", "select": {"all_columns": {}}},
         }
         self.assertEqual(result, expected)
 

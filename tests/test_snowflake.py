@@ -274,7 +274,7 @@ class TestSnowflake(TestCase):
         result = parse(sql)
         expected = {
             "from": "my_table",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"ilike": ["subject", {"literal": "%j%do%"}]},
         }
         self.assertEqual(result, expected)
@@ -297,7 +297,7 @@ class TestSnowflake(TestCase):
         result = parse(sql)
         expected = {
             "from": [
-                {"name": "monthly_sales", "value": {"select": "*", "from": "monthly_sales_table"}},
+                {"name": "monthly_sales", "value": {"select": {"all_columns": {}}, "from": "monthly_sales_table"}},
                 {
                     "pivot": {
                         "name": "p",
@@ -307,7 +307,7 @@ class TestSnowflake(TestCase):
                     },
                 },
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
 
         self.assertEqual(result, expected)
@@ -324,7 +324,7 @@ class TestSnowflake(TestCase):
                 {"unpivot": {"value": "sales", "for": "month", "in": {"value": ["jan", "feb", "mar", "april"]}}},
             ],
             "orderby": {"value": "empid"},
-            "select": "*",
+            "select": {"all_columns": {}},
         }
 
         self.assertEqual(result, expected)
@@ -555,7 +555,7 @@ class TestSnowflake(TestCase):
         result = parse(sql)
         expected = {"copy": {
             "file_format": {"compression": {"literal": "gzip"}, "format_name": {"literal": "myformat"}},
-            "from": {"from": "orderstiny", "select": "*"},
+            "from": {"from": "orderstiny", "select": {"all_columns": {}}},
             "into": "@my_stage/result/data_",
         }}
         self.assertEqual(result, expected)
@@ -698,7 +698,7 @@ class TestSnowflake(TestCase):
             VALIDATION_MODE='RETURN_ROWS';"""
         result = parse(sql)
         expected = {"copy": {
-            "from": {"from": "orderstiny", "limit": 5, "select": "*"},
+            "from": {"from": "orderstiny", "limit": 5, "select": {"all_columns": {}}},
             "into": "@my_stage",
             "validation_mode": {"literal": "RETURN_ROWS"},
         }}
@@ -941,8 +941,8 @@ class TestSnowflake(TestCase):
         expected = {"create table": {
             "columns": {"name": "a", "type": {"varchar": 10}},
             "name": "foo",
-            "cluster_by": "a"}
-        }
+            "cluster_by": "a",
+        }}
         self.assertEqual(result, expected)
 
     def test_issue_201_create_table_cluster_key_composite(self):
@@ -951,6 +951,6 @@ class TestSnowflake(TestCase):
         expected = {"create table": {
             "columns": [{"name": "a", "type": {"varchar": 10}}, {"name": "b", "type": {"int": {}}}],
             "name": "foo",
-            "cluster_by": ["a", "b"]}
-        }
+            "cluster_by": ["a", "b"],
+        }}
         self.assertEqual(result, expected)

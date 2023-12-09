@@ -80,13 +80,11 @@ class TestErrors(FuzzyTestCase):
         with self.assertRaises("Expecting identifier, found \"'t'"):
             parse(sql)
 
-    @skip("TODO: this test is correct, please fix")
     def test_issue_90_tablesample_error1(self):
         sql = "SELECT * FROM foo TABLESAMPLE(bernoulli) WHERE a < 42"
         with self.assertRaises('Expecting {bytes_constraint} | {bucket} | {int}, found "bernoulli'):
             parse(sql)
 
-    @skip("TODO: this test is correct, please fix")
     def test_issue_90_tablesample_error2(self):
         sql = "SELECT * FROM foo f TABLESAMPLE(bernoulli) WHERE f.a < 42"
         with self.assertRaises('Expecting {bytes_constraint} | {bucket} | {int}, found "bernoulli'):

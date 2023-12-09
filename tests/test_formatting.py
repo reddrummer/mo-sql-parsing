@@ -15,12 +15,12 @@ from mo_sql_parsing import format, parse, parse_sqlserver
 
 class TestSimple(TestCase):
     def test_two_tables(self):
-        result = format({"select": "*", "from": ["XYZZY", "ABC"]})
+        result = format({"select": {"all_columns": {}}, "from": ["XYZZY", "ABC"]})
         expected = "SELECT * FROM XYZZY, ABC"
         self.assertEqual(result, expected)
 
     def test_dot_table_name(self):
-        result = format({"select": "*", "from": "SYS.XYZZY"})
+        result = format({"select": {"all_columns": {}}, "from": "SYS.XYZZY"})
         expected = "SELECT * FROM SYS.XYZZY"
         self.assertEqual(result, expected)
 
@@ -66,7 +66,7 @@ class TestSimple(TestCase):
         self.assertEqual(result, expected)
 
     def test_where_neq(self):
-        result = format({"select": "*", "from": "dual", "where": {"neq": ["a", {"literal": "test"}]}})
+        result = format({"select": {"all_columns": {}}, "from": "dual", "where": {"neq": ["a", {"literal": "test"}]}})
         expected = "SELECT * FROM dual WHERE a <> 'test'"
         self.assertEqual(result, expected)
 
@@ -178,7 +178,7 @@ class TestSimple(TestCase):
                 {"eq": ["name", {"literal": "abc"}]},
                 {"in": ["id", {"literal": ["1", "2"]}]},
             ]},
-            "select": "*",
+            "select": {"all_columns": {}},
         })
         expected = "SELECT * FROM trade WHERE school LIKE '%shool' AND name = 'abc' AND id IN ('1', '2')"
         self.assertEqual(result, expected)
@@ -206,7 +206,7 @@ class TestSimple(TestCase):
     def test_in_expression(self):
         result = format({
             "from": "task",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"in": ["repo.branch.name", {"literal": ["try", "mozilla-central"]}]},
         })
         expected = "SELECT * FROM task WHERE repo.branch.name IN ('try', 'mozilla-central')"
@@ -218,14 +218,14 @@ class TestSimple(TestCase):
                 {"name": "t1", "value": "table1"},
                 {"on": {"eq": ["t1.id", "t3.id"]}, "join": {"name": "t3", "value": "table3"}},
             ],
-            "select": "*",
+            "select": {"all_columns": {}},
         })
         expected = "SELECT * FROM table1 AS t1 JOIN table3 AS t3 ON t1.id = t3.id"
         self.assertEqual(result, expected)
 
     def test_not_equal(self):
         result = format({
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "task",
             "where": {"and": [{"exists": "build.product"}, {"neq": ["build.product", {"literal": "firefox"}]}]},
         })
@@ -233,17 +233,20 @@ class TestSimple(TestCase):
         self.assertEqual(result, expected)
 
     def test_union(self):
-        result = format({"union": [{"select": "*", "from": "a"}, {"select": "*", "from": "b"}]})
+        result = format({"union": [
+            {"select": {"all_columns": {}}, "from": "a"},
+            {"select": {"all_columns": {}}, "from": "b"},
+        ]})
         expected = "SELECT * FROM a UNION SELECT * FROM b"
         self.assertEqual(result, expected)
 
     def test_limit(self):
-        result = format({"select": "*", "from": "a", "limit": 10})
+        result = format({"select": {"all_columns": {}}, "from": "a", "limit": 10})
         expected = "SELECT * FROM a LIMIT 10"
         self.assertEqual(result, expected)
 
     def test_offset(self):
-        result = format({"select": "*", "from": "a", "limit": 10, "offset": 10})
+        result = format({"select": {"all_columns": {}}, "from": "a", "limit": 10, "offset": 10})
         expected = "SELECT * FROM a LIMIT 10 OFFSET 10"
         self.assertEqual(result, expected)
 
@@ -268,17 +271,17 @@ class TestSimple(TestCase):
 
     def test_binary_and(self):
         expected = "SELECT * FROM t WHERE c & 4"
-        result = format({"select": "*", "from": "t", "where": {"binary_and": ["c", 4]}})
+        result = format({"select": {"all_columns": {}}, "from": "t", "where": {"binary_and": ["c", 4]}})
         self.assertEqual(result, expected)
 
     def test_binary_or(self):
         expected = "SELECT * FROM t WHERE c | 4"
-        result = format({"select": "*", "from": "t", "where": {"binary_or": ["c", 4]}})
+        result = format({"select": {"all_columns": {}}, "from": "t", "where": {"binary_or": ["c", 4]}})
         self.assertEqual(result, expected)
 
     def test_binary_not(self):
         expected = "SELECT * FROM t WHERE ~c"
-        result = format({"select": "*", "from": "t", "where": {"binary_not": "c"}})
+        result = format({"select": {"all_columns": {}}, "from": "t", "where": {"binary_not": "c"}})
         self.assertEqual(result, expected)
 
     def test_issue_104(self):
@@ -312,7 +315,7 @@ class TestSimple(TestCase):
     def test_with_cte(self):
         expected = "WITH t AS (SELECT a FROM table) SELECT * FROM t"
         result = format({
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "t",
             "with": {"name": "t", "value": {"select": {"value": "a"}, "from": "table"}},
         })
@@ -321,7 +324,7 @@ class TestSimple(TestCase):
     def test_with_cte_various(self):
         expected = "WITH t1 AS (SELECT a FROM table), t2 AS (SELECT 1) SELECT * FROM t1, t2"
         result = format({
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": ["t1", "t2"],
             "with": [
                 {"name": "t1", "value": {"select": {"value": "a"}, "from": "table"}},
@@ -339,7 +342,7 @@ class TestSimple(TestCase):
         original_sql = "select * from T where (a, b) in (('a', 'b'), ('c', 'd'))"
         parse_result = parse(original_sql)
         expected_result = {
-            "select": "*",
+            "select": {"all_columns": {}},
             "from": "T",
             "where": {"in": [["a", "b"], {"literal": [["a", "b"], ["c", "d"]]}]},
         }
@@ -623,7 +626,7 @@ class TestSimple(TestCase):
         p = parse(sql)
         s = format(p)
         self.assertEqual(
-            p, {"from": "mytable", "select": "*", "where": {"in": [["a", "b"], [[1, 2], [3, 4]]]}},
+            p, {"from": "mytable", "select": {"all_columns": {}}, "where": {"in": [["a", "b"], [[1, 2], [3, 4]]]}},
         )
         self.assertEqual(s, "SELECT * FROM mytable WHERE (a, b) IN ((1, 2), (3, 4))")
 
@@ -635,7 +638,7 @@ class TestSimple(TestCase):
             p,
             {
                 "from": "AirlineFlights",
-                "select": "*",
+                "select": {"all_columns": {}},
                 "where": {"in": [["origin", "dest"], {"literal": [["ATL", "ABE"], ["DFW", "ABI"]]}]},
             },
         )

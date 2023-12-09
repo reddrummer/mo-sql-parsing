@@ -108,7 +108,11 @@ class TestRedshift(TestCase):
 
         self.assertEqual(
             result,
-            {"union_all": [{"from": "a", "select": "*"}, {"from": "b", "select": "*"}, {"from": "c", "select": "*"}]},
+            {"union_all": [
+                {"from": "a", "select": {"all_columns": {}}},
+                {"from": "b", "select": {"all_columns": {}}},
+                {"from": "c", "select": {"all_columns": {}}},
+            ]},
         )
 
     def test_dates1(self):
@@ -161,7 +165,7 @@ class TestRedshift(TestCase):
             result,
             {
                 "from": ["t", {"left join": "ex", "on": {"eq": ["t.date", {"cast": ["ex.date_at", {"date": ""}]}]}},],
-                "select": "*",
+                "select": {"all_columns": {}},
             },
         )
 
@@ -356,13 +360,13 @@ class TestRedshift(TestCase):
             result,
             {
                 "from": "outer_cte",
-                "select": "*",
+                "select": {"all_columns": {}},
                 "with": {
                     "name": "outer_cte",
                     "value": {
                         "from": "inner_cte",
                         "select": {"value": {"cast": ["date_at", {"date": {}}]}},
-                        "with": {"name": "inner_cte", "value": {"from": "source", "select": "*"}},
+                        "with": {"name": "inner_cte", "value": {"from": "source", "select": {"all_columns": {}}}},
                     },
                 },
             },
@@ -402,8 +406,11 @@ class TestRedshift(TestCase):
         self.assertEqual(
             result,
             {"union_all": [
-                {"union": [{"from": "a", "select": "*"}, {"from": "b", "select": "*"}]},
-                {"from": "c", "select": "*"},
+                {"union": [
+                    {"from": "a", "select": {"all_columns": {}}},
+                    {"from": "b", "select": {"all_columns": {}}},
+                ]},
+                {"from": "c", "select": {"all_columns": {}}},
             ]},
         )
 

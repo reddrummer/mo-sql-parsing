@@ -22,19 +22,19 @@ class TestResources(TestCase):
     def test_001(self):
         sql = "SELECT * FROM test1"
         result = parse(sql)
-        expected = {"from": "test1", "select": "*"}
+        expected = {"from": "test1", "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_002(self):
         sql = "SELECT * FROM test1, test2"
         result = parse(sql)
-        expected = {"from": ["test1", "test2"], "select": "*"}
+        expected = {"from": ["test1", "test2"], "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_003(self):
         sql = "SELECT * FROM test2, test1"
         result = parse(sql)
-        expected = {"from": ["test2", "test1"], "select": "*"}
+        expected = {"from": ["test2", "test1"], "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_004(self):
@@ -64,7 +64,7 @@ class TestResources(TestCase):
     def test_008(self):
         sql = "SELECT *, * FROM test1"
         result = parse(sql)
-        expected = {"from": "test1", "select": ["*", "*"]}
+        expected = {"from": "test1", "select": [{"all_columns": {}}, {"all_columns": {}}]}
         self.assertEqual(result, expected)
 
     def test_009(self):
@@ -72,7 +72,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "test1",
-            "select": ["*", {"value": {"min": ["f1", "f2"]}}, {"value": {"max": ["f1", "f2"]}}],
+            "select": [{"all_columns": {}}, {"value": {"min": ["f1", "f2"]}}, {"value": {"max": ["f1", "f2"]}}],
         }
         self.assertEqual(result, expected)
 
@@ -81,7 +81,12 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "test1",
-            "select": [{"value": {"literal": "one"}}, "*", {"value": {"literal": "two"}}, "*"],
+            "select": [
+                {"value": {"literal": "one"}},
+                {"all_columns": {}},
+                {"value": {"literal": "two"}},
+                {"all_columns": {}},
+            ],
         }
         self.assertEqual(result, expected)
 
@@ -90,7 +95,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["test1", "test2"],
-            "select": ["*", {"value": {"literal": "hi"}}],
+            "select": [{"all_columns": {}}, {"value": {"literal": "hi"}}],
         }
         self.assertEqual(result, expected)
 
@@ -99,7 +104,12 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["test1", "test2"],
-            "select": [{"value": {"literal": "one"}}, "*", {"value": {"literal": "two"}}, "*"],
+            "select": [
+                {"value": {"literal": "one"}},
+                {"all_columns": {}},
+                {"value": {"literal": "two"}},
+                {"all_columns": {}},
+            ],
         }
         self.assertEqual(result, expected)
 
@@ -126,7 +136,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": [{"value": "test1", "name": "a"}, {"value": "test1", "name": "b"}],
-            "select": "*",
+            "select": {"all_columns": {}},
         }
         self.assertEqual(result, expected)
 
@@ -507,19 +517,19 @@ class TestResources(TestCase):
     def test_067(self):
         sql = "SELECT * FROM t5 ORDER BY 1"
         result = parse(sql)
-        expected = {"from": "t5", "select": "*", "orderby": {"value": 1}}
+        expected = {"from": "t5", "select": {"all_columns": {}}, "orderby": {"value": 1}}
         self.assertEqual(result, expected)
 
     def test_068(self):
         sql = "SELECT * FROM t5 ORDER BY 2"
         result = parse(sql)
-        expected = {"from": "t5", "select": "*", "orderby": {"value": 2}}
+        expected = {"from": "t5", "select": {"all_columns": {}}, "orderby": {"value": 2}}
         self.assertEqual(result, expected)
 
     def test_069(self):
         sql = "SELECT * FROM t5 ORDER BY +2"
         result = parse(sql)
-        expected = {"from": "t5", "select": "*", "orderby": {"value": 2}}
+        expected = {"from": "t5", "select": {"all_columns": {}}, "orderby": {"value": 2}}
         self.assertEqual(result, expected)
 
     def test_070(self):
@@ -527,7 +537,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "t5",
-            "select": "*",
+            "select": {"all_columns": {}},
             "orderby": [{"value": 2}, {"value": 1, "sort": "desc"}],
         }
         self.assertEqual(result, expected)
@@ -537,7 +547,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "t5",
-            "select": "*",
+            "select": {"all_columns": {}},
             "orderby": [{"value": 1, "sort": "desc"}, {"value": "b"}],
         }
         self.assertEqual(result, expected)
@@ -547,7 +557,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "t5",
-            "select": "*",
+            "select": {"all_columns": {}},
             "orderby": [{"value": "b", "sort": "desc"}, {"value": 1}],
         }
         self.assertEqual(result, expected)
@@ -754,7 +764,7 @@ class TestResources(TestCase):
     def test_100(self):
         sql = "SELECT * FROM test1 WHERE f1<0"
         result = parse(sql)
-        expected = {"from": "test1", "select": "*", "where": {"lt": ["f1", 0]}}
+        expected = {"from": "test1", "select": {"all_columns": {}}, "where": {"lt": ["f1", 0]}}
         self.assertEqual(result, expected)
 
     def test_103(self):
@@ -762,7 +772,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "test1",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["f1", {"from": "test2", "select": {"value": {"count": "*"}}}]},
         }
         self.assertEqual(result, expected)
@@ -770,7 +780,7 @@ class TestResources(TestCase):
     def test_104(self):
         sql = "SELECT * FROM test1 ORDER BY f1"
         result = parse(sql)
-        expected = {"from": "test1", "select": "*", "orderby": {"value": "f1"}}
+        expected = {"from": "test1", "select": {"all_columns": {}}, "orderby": {"value": "f1"}}
         self.assertEqual(result, expected)
 
     def test_105(self):
@@ -778,7 +788,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "test1",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"lt": ["f1", 0]},
             "orderby": {"value": "f1"},
         }
@@ -857,7 +867,7 @@ class TestResources(TestCase):
     def test_113(self):
         sql = "SELECT * FROM t3, t4"
         result = parse(sql)
-        expected = {"from": ["t3", "t4"], "select": "*"}
+        expected = {"from": ["t3", "t4"], "select": {"all_columns": {}}}
         self.assertEqual(result, expected)
 
     def test_114(self):
@@ -865,7 +875,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["t3", "t4"],
-            "select": [{"value": "t3.*"}, {"value": "t4.b"}],
+            "select": [{"all_columns": "t3"}, {"value": "t4.b"}],
         }
         self.assertEqual(result, expected)
 
@@ -874,7 +884,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["t3", "t4"],
-            "select": [{"value": "t3.b"}, {"value": "t4.*"}],
+            "select": [{"value": "t3.b"}, {"all_columns": "t4"}],
         }
         self.assertEqual(result, expected)
 
@@ -886,7 +896,10 @@ class TestResources(TestCase):
         sql = 'SELECT * FROM t3 UNION SELECT 3 AS "a", 4 ORDER BY a'
         result = parse(sql)
         expected = {
-            "from": {"union": [{"from": "t3", "select": "*"}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [
+                {"from": "t3", "select": {"all_columns": {}}},
+                {"select": [{"value": 3, "name": "a"}, {"value": 4}]},
+            ]},
             "orderby": {"value": "a"},
         }
         self.assertEqual(result, expected)
@@ -895,7 +908,10 @@ class TestResources(TestCase):
         sql = "SELECT * FROM t3 UNION SELECT 3 AS a, 4 ORDER BY a"
         result = parse(sql)
         expected = {
-            "from": {"union": [{"from": "t3", "select": "*"}, {"select": [{"value": 3, "name": "a"}, {"value": 4}]}]},
+            "from": {"union": [
+                {"from": "t3", "select": {"all_columns": {}}},
+                {"select": [{"value": 3, "name": "a"}, {"value": 4}]},
+            ]},
             "orderby": {"value": "a"},
         }
         self.assertEqual(result, expected)
@@ -903,7 +919,7 @@ class TestResources(TestCase):
     def test_119(self):
         sql = "SELECT 3, 4 UNION SELECT * FROM t3"
         result = parse(sql)
-        expected = {"union": [{"select": [{"value": 3}, {"value": 4}]}, {"from": "t3", "select": "*"}]}
+        expected = {"union": [{"select": [{"value": 3}, {"value": 4}]}, {"from": "t3", "select": {"all_columns": {}}}]}
         self.assertEqual(result, expected)
 
     def test_120(self):
@@ -911,7 +927,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "t3",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"eq": ["a", {"select": {"value": 1}}]},
         }
         self.assertEqual(result, expected)
@@ -921,7 +937,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": "t3",
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"eq": ["a", {"select": {"value": 2}}]},
         }
         self.assertEqual(result, expected)
@@ -1006,13 +1022,13 @@ class TestResources(TestCase):
     def test_145(self):
         sql = "SELECT * FROM tbl2 WHERE 1000=f2"
         result = parse(sql)
-        expected = {"from": "tbl2", "select": "*", "where": {"eq": [1000, "f2"]}}
+        expected = {"from": "tbl2", "select": {"all_columns": {}}, "where": {"eq": [1000, "f2"]}}
         self.assertEqual(result, expected)
 
     def test_146(self):
         sql = "SELECT * FROM tbl2 WHERE f2=1000"
         result = parse(sql)
-        expected = {"from": "tbl2", "select": "*", "where": {"eq": ["f2", 1000]}}
+        expected = {"from": "tbl2", "select": {"all_columns": {}}, "where": {"eq": ["f2", 1000]}}
         self.assertEqual(result, expected)
 
     def test_148(self):
@@ -1028,7 +1044,7 @@ class TestResources(TestCase):
     def test_150(self):
         sql = "SELECT * FROM aa CROSS JOIN bb WHERE b"
         result = parse(sql)
-        expected = {"from": ["aa", {"cross join": "bb"}], "select": "*", "where": "b"}
+        expected = {"from": ["aa", {"cross join": "bb"}], "select": {"all_columns": {}}, "where": "b"}
         self.assertEqual(result, expected)
 
     def test_151(self):
@@ -1036,7 +1052,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["aa", {"cross join": "bb"}],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"not": "b"},
         }
         self.assertEqual(result, expected)
@@ -1044,7 +1060,7 @@ class TestResources(TestCase):
     def test_152(self):
         sql = "SELECT * FROM aa, bb WHERE min(a,b)"
         result = parse(sql)
-        expected = {"from": ["aa", "bb"], "select": "*", "where": {"min": ["a", "b"]}}
+        expected = {"from": ["aa", "bb"], "select": {"all_columns": {}}, "where": {"min": ["a", "b"]}}
         self.assertEqual(result, expected)
 
     def test_153(self):
@@ -1052,7 +1068,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["aa", "bb"],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"not": {"min": ["a", "b"]}},
         }
         self.assertEqual(result, expected)
@@ -1062,7 +1078,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["aa", "bb"],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"case": {"when": {"eq": ["a", {"sub": ["b", 1]}]}, "then": 1}},
         }
         self.assertEqual(result, expected)
@@ -1072,7 +1088,7 @@ class TestResources(TestCase):
         result = parse(sql)
         expected = {
             "from": ["aa", "bb"],
-            "select": "*",
+            "select": {"all_columns": {}},
             "where": {"case": [{"when": {"eq": ["a", {"sub": ["b", 1]}]}, "then": 0}, 1]},
         }
         self.assertEqual(result, expected)

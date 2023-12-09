@@ -122,7 +122,7 @@ SQL queries are translated to JSON objects: Each clause is assigned to an object
     
     # SELECT * FROM dual WHERE a>b ORDER BY a+b
     {
-        "select": "*", 
+        "select": {"all_columns": {}} 
         "from": "dual", 
         "where": {"gt": ["a", "b"]}, 
         "orderby": {"value": {"add": ["a", "b"]}}
@@ -159,6 +159,33 @@ for select in listwrap(parsed_result.get('select')):
 ```
 
 ## Version Changes, Features
+
+
+### Version 10
+
+*December 2023*
+
+`SELECT *` now emits an `all_columns` call instead of plain star (`*`).  
+
+```
+>>> from mo_sql_parsing import parse
+>>> parse("SELECT * FROM table")
+{'select': {'all_columns': {}}, 'from': 'table'}
+```
+
+This works better with the `except` clause, and is more explicit when selecting all child properties.
+
+``` 
+>>> parse("SELECT a.* EXCEPT b FROM table")
+>>> {"select": {"all_columns":"a", "except": "b"}, "from": "table"}
+```
+
+You may get the original behaviour with `all_columns="*"`:
+
+```
+>>> parse("SELECT * FROM table", all_columns="*")
+{'select': "*", 'from': 'table'}
+```
 
 
 ### Version 9
