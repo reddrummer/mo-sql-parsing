@@ -363,6 +363,8 @@ class Formatter:
         member, set = json
         if "literal" in set:
             set = {"literal": listwrap(set["literal"])}
+        else:
+            set = listwrap(set)
         sql = self.dispatch(member, precedence["in"]) + " IN " + self.dispatch(set, precedence["in"])
         if prec < precedence["in"]:
             sql = f"({sql})"
@@ -372,6 +374,8 @@ class Formatter:
         member, set = json
         if "literal" in set:
             set = {"literal": listwrap(set["literal"])}
+        else:
+            set = listwrap(set)
         sql = self.dispatch(member, precedence["in"]) + " NOT IN " + self.dispatch(set, precedence["in"])
         if prec < precedence["in"]:
             sql = f"({sql})"
