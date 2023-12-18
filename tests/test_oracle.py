@@ -59,3 +59,7 @@ class TestOracle(TestCase):
             "from": "b.c",
         }
         self.assertEqual(result, expected)
+
+    def test_issue_218(self):
+        sql = """
+        """
