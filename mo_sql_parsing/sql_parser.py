@@ -957,7 +957,23 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             ),
         )
 
-        block = BEGIN + Group(ZeroOrMore(statement))("block") + END
+        block = BEGIN + Group(ZeroOrMore(statement)) + END
+
+        """
+        CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
+            INSERT INTO film_text (film_id, title, description)
+            VALUES (new.film_id, new.title, new.description);
+        END
+        """
+        create_trigger = assign("create trigger", (
+            identifier("name")
+            + MatchFirst([keyword(k) for k in ["before", "after"]])("when")
+            + MatchFirst([keyword(k) for k in ["insert", "update", "delete"]])("event")
+            + ON
+            + identifier("table")
+            + keyword("for each row").suppress()
+            + block("code")
+        ))
 
         #############################################################
         # FINALLY ASSEMBLE THE PARSER
@@ -985,6 +1001,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             | (drop_table | drop_view | drop_index | drop_schema)
             | (copy | alter)
             | (Optional(keyword("alter session")).suppress() + (set_variable | unset_variable | declare_variable))
+            | create_trigger
         )
 
         command = Group(delimiter_command | explain | statement)
