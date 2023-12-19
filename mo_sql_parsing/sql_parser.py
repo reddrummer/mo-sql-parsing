@@ -7,6 +7,7 @@
 # Contact: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 from mo_parsing import debug, Null
+from mo_parsing.core import add_reset_action
 from mo_parsing.whitespaces import NO_WHITESPACE, Whitespace
 
 from mo_sql_parsing import utils
@@ -14,6 +15,9 @@ from mo_sql_parsing.keywords import *
 from mo_sql_parsing.types import get_column_type, time_functions, _sizes
 from mo_sql_parsing.utils import *
 from mo_sql_parsing.windows import window
+
+delimiters = {";", Literal(";")}
+delimiter_pattern = Forward()
 
 
 def common_parser(all_columns):
@@ -574,13 +578,14 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + RB
         )
 
-        column_def_delete = assign("on delete", (keyword("cascade") | keyword("set null") | keyword("set default")),)
-
+        column_def_delete = assign("on delete", (keyword("cascade") | keyword("restrict") | keyword("set null") | keyword("set default")),)
         table_def_foreign_key = FOREIGN_KEY + Optional(
             Optional(identifier("index_name"))
             + index_column_names
             + column_def_references
-            + Optional(column_def_delete)
+            + ZeroOrMore(
+                column_def_delete | assign("on update", keyword("cascade") )
+            )
         )
 
         index_options = ZeroOrMore(identifier / (lambda t: {t[0]: True}))
@@ -605,6 +610,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             )("index")
             | assign("check", LB + expression + RB)
             | table_def_foreign_key("foreign_key")
+            | assign("fulltext key", identifier("name") + index_column_names)
         )
 
         table_element = table_constraint_definition("constraint") | column_definition("columns")
@@ -663,6 +669,15 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + index_options
         )("create index")
 
+        create_schema = (
+            keyword("create schema")
+            + Optional(keyword("or") + flag("replace"))(INDEX | KEY)
+            + Optional((keyword("if not exists") / False)("replace"))
+            + identifier("name")
+        )("create_schema")
+
+        use_schema = assign("use", identifier)
+
         cache_options = Optional((
             keyword("options").suppress()
             + LB
@@ -686,6 +701,8 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         drop_view = (keyword("drop view") + Optional(flag("if exists")) + identifier("view"))("drop")
 
         drop_index = (keyword("drop index") + Optional(flag("if exists")) + identifier("index"))("drop")
+
+        drop_schema = (keyword("drop schema") + Optional(flag("if exists")) + identifier("schema"))("drop")
 
         returning = Optional(delimited_list(select_column)("returning"))
 
@@ -809,11 +826,10 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         #############################################################
         special_ident = keyword("masking policy") | identifier / (lambda t: t[0].lower())
         declare_variable = assign("declare", column_definition)
-        set_variable = assign(
-            "set",
-            (special_ident + Optional(EQ) + expression)("params")
-            / (lambda t: {t[0].lower(): t[1].lower() if isinstance(t[1], str) else t[1]}),
-        )
+        set_variable = SET + delimited_list((
+            (special_ident + Optional(EQ) + expression)
+            / (lambda t: {t[0].lower(): t[1].lower() if isinstance(t[1], str) else t[1]})
+        ))("set")
         unset_variable = assign("unset", special_ident)
 
         copy_options = Forward()
@@ -941,17 +957,36 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             ),
         )
 
+        with NO_WHITESPACE:
+            def change_delimiter(tokens):
+                global delimiter
+                chars = tokens[0].strip()
+                delimiter = delimiters.get(chars)
+                if not delimiter:
+                    delimiters[chars] = Literal(chars)
+                    delimiter_pattern << delimiters[chars]
+
+            delimiter_command = assign("delimiter", Regex(r"[^\n]+")) / change_delimiter
+
         set_parser_names()
 
         debugger.__enter__()
 
         statement << (
             query
-            | (insert | update | delete | merge | truncate)
-            | (create_table | create_view | create_cache | create_index)
-            | (drop_table | drop_view | drop_index)
+            | (insert | update | delete | merge | truncate | use_schema)
+            | (create_table | create_view | create_cache | create_index | create_schema)
+            | (drop_table | drop_view | drop_index | drop_schema)
             | (copy | alter)
             | (Optional(keyword("alter session")).suppress() + (set_variable | unset_variable | declare_variable))
+            | delimiter_command
         )
 
-        return (explain | statement).finalize()
+        return delimited_list((explain | statement).finalize(), delimiter=delimiter_pattern)
+
+
+def _reset_delimiter():
+    delimiter_pattern << delimiters[";"]
+
+
+add_reset_action(_reset_delimiter)

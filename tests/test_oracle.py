@@ -5,13 +5,18 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-
-
+import re
 from unittest import TestCase
+
+from mo_files import File
+from mo_logs import strings
+from mo_parsing.debug import Debugger
+from mo_testing.fuzzytestcase import add_error_reporting
 
 from mo_sql_parsing import parse
 
 
+@add_error_reporting
 class TestOracle(TestCase):
     def test_issue_90_tablesample1(self):
         sql = "SELECT * FROM foo SAMPLE bernoulli (1) WHERE a < 42"
@@ -60,6 +65,27 @@ class TestOracle(TestCase):
         }
         self.assertEqual(result, expected)
 
-    def test_issue_218(self):
-        sql = """
-        """
+    def test_issue_218_udf(self):
+
+        def lines():
+            delimiter = ";"
+            splitter = re.compile(r";\s*\n")
+            content = File("tests/oracle/issue_218.sql").read()
+            while content:
+                sql, content = splitter.split(content, 1)
+                result = parse(sql+delimiter)
+                if result and "delimiter" in result:
+                    with Debugger():
+                        parse(sql + delimiter)
+                    delimiter = result["delimiter"].strip()
+                    splitter = re.compile(re.escape(delimiter) + r"\s*\n")
+                yield result
+
+        from tests.oracle.issue_218 import expectations
+        for i, (result, expected) in enumerate(zip(lines(), expectations)):
+            self.assertEqual(result, expected)
+
+    def test_issue_218_comment(self):
+        sql = """/*!50610 SET @@default_storage_engine = 'InnoDB'*/;"""
+        result = parse(sql)
+        self.assertIsNone(result)
