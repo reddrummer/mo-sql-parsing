@@ -128,6 +128,7 @@ ASSIGN = Literal(":=").set_parser_name("assign")
 
 AND = keyword("and")
 APPLY = keyword("apply")
+BEGIN = keyword("begin")
 BETWEEN = keyword("between")
 CASE = keyword("case").suppress()
 COLLATE = keyword("collate")

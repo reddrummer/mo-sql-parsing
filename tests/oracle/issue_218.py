@@ -357,6 +357,7 @@ expectations = [
         "name": "film_text",
     }},
     {"set": {"@@default_storage_engine": "@old_default_storage_engine"}},
+    {"delimiter":";;"},
     {},
     {},
     {},

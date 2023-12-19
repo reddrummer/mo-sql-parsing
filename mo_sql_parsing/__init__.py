@@ -101,7 +101,6 @@ def _get_or_create_parser(parser_name, all_columns=None):
 def _parse(parser, sql, null, calls):
     _utils.null_locations = []
     _utils.scrub_op = calls
-    sql = sql.rstrip().rstrip(";")
     parse_result = parser.parse_string(sql, parse_all=True)
     output = scrub(parse_result)
     for o, n in _utils.null_locations:

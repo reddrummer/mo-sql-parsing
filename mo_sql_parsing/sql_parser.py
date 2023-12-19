@@ -16,7 +16,7 @@ from mo_sql_parsing.types import get_column_type, time_functions, _sizes
 from mo_sql_parsing.utils import *
 from mo_sql_parsing.windows import window
 
-delimiters = {";", Literal(";")}
+delimiters = {";": Literal(";").suppress()}
 delimiter_pattern = Forward()
 
 
@@ -50,7 +50,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
     ident = Combine(delimited_list(simple_ident, separator=".", combine=True))
 
-    with Whitespace() as white:
+    with (Whitespace() as white):
         rest_of_line = Regex(r"[^\n]*")
 
         white.add_ignore(Literal("--") + rest_of_line)
@@ -957,16 +957,22 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             ),
         )
 
+        block = BEGIN + Group(ZeroOrMore(statement))("block") + END
+
+        #############################################################
+        # FINALLY ASSEMBLE THE PARSER
+        #############################################################
+
         with NO_WHITESPACE:
             def change_delimiter(tokens):
-                global delimiter
                 chars = tokens[0].strip()
                 delimiter = delimiters.get(chars)
                 if not delimiter:
-                    delimiters[chars] = Literal(chars)
-                    delimiter_pattern << delimiters[chars]
+                    delimiter = delimiters[chars] = Literal(chars).suppress()
+                delimiter_pattern << delimiter
+                return chars
 
-            delimiter_command = assign("delimiter", Regex(r"[^\n]+")) / change_delimiter
+            delimiter_command = assign("delimiter", Regex(r"[^\n]+") / change_delimiter)
 
         set_parser_names()
 
@@ -979,10 +985,14 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             | (drop_table | drop_view | drop_index | drop_schema)
             | (copy | alter)
             | (Optional(keyword("alter session")).suppress() + (set_variable | unset_variable | declare_variable))
-            | delimiter_command
         )
 
-        return delimited_list((explain | statement).finalize(), delimiter=delimiter_pattern)
+        command = Group(delimiter_command | explain | statement)
+        return (
+            ZeroOrMore(delimiter_pattern) +
+            Optional(command) +
+            ZeroOrMore(OneOrMore(delimiter_pattern) + Optional(command))
+        ).finalize()
 
 
 def _reset_delimiter():

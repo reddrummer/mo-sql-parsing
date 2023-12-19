@@ -71,13 +71,13 @@ class TestOracle(TestCase):
             delimiter = ";"
             splitter = re.compile(r";\s*\n")
             content = File("tests/oracle/issue_218.sql").read()
+            parse("delimiter ;")
             while content:
                 sql, content = splitter.split(content, 1)
+                print(sql)
                 result = parse(sql+delimiter)
                 if result and "delimiter" in result:
-                    with Debugger():
-                        parse(sql + delimiter)
-                    delimiter = result["delimiter"].strip()
+                    delimiter = result["delimiter"]
                     splitter = re.compile(re.escape(delimiter) + r"\s*\n")
                 yield result
 
