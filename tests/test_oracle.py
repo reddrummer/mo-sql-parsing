@@ -13,7 +13,7 @@ from mo_logs import strings
 from mo_parsing.debug import Debugger
 from mo_testing.fuzzytestcase import add_error_reporting
 
-from mo_sql_parsing import parse
+from mo_sql_parsing import parse, parse_delimiters
 
 
 @add_error_reporting
@@ -66,23 +66,10 @@ class TestOracle(TestCase):
         self.assertEqual(result, expected)
 
     def test_issue_218_udf(self):
-
-        def lines():
-            delimiter = ";"
-            splitter = re.compile(r";\s*\n")
-            content = File("tests/oracle/issue_218.sql").read()
-            parse("delimiter ;")
-            while content:
-                sql, content = splitter.split(content, 1)
-                print(sql)
-                result = parse(sql+delimiter)
-                if result and "delimiter" in result:
-                    delimiter = result["delimiter"]
-                    splitter = re.compile(re.escape(delimiter) + r"\s*\n")
-                yield result
-
         from tests.oracle.issue_218 import expectations
-        for i, (result, expected) in enumerate(zip(lines(), expectations)):
+        content = File("tests/oracle/issue_218.sql").read()
+        for i, (sql, expected) in enumerate(zip(parse_delimiters(content), expectations)):
+            result = parse(sql)
             self.assertEqual(result, expected)
 
     def test_issue_218_comment(self):

@@ -669,12 +669,11 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + index_options
         )("create index")
 
-        create_schema = (
-            keyword("create schema")
-            + Optional(keyword("or") + flag("replace"))(INDEX | KEY)
+        create_schema = assign("create schema", Group(
+            Optional(keyword("or") + flag("replace"))(INDEX | KEY)
             + Optional((keyword("if not exists") / False)("replace"))
             + identifier("name")
-        )("create_schema")
+        ))
 
         use_schema = assign("use", identifier)
 
@@ -696,13 +695,10 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + Optional(AS + query("query"))
         )("cache")
 
-        drop_table = (keyword("drop table") + Optional(flag("if exists")) + identifier("table"))("drop")
-
-        drop_view = (keyword("drop view") + Optional(flag("if exists")) + identifier("view"))("drop")
-
-        drop_index = (keyword("drop index") + Optional(flag("if exists")) + identifier("index"))("drop")
-
-        drop_schema = (keyword("drop schema") + Optional(flag("if exists")) + identifier("schema"))("drop")
+        drops = assign("drop", MatchFirst([
+            keyword(item).suppress() + Optional(flag("if exists")) + Group(identifier)(item)
+            for item in ["table", "view", "index", "schema"]
+        ]))
 
         returning = Optional(delimited_list(select_column)("returning"))
 
@@ -998,7 +994,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             query
             | (insert | update | delete | merge | truncate | use_schema)
             | (create_table | create_view | create_cache | create_index | create_schema)
-            | (drop_table | drop_view | drop_index | drop_schema)
+            | drops
             | (copy | alter)
             | (Optional(keyword("alter session")).suppress() + (set_variable | unset_variable | declare_variable))
             | create_trigger
