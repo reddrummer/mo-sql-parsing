@@ -571,7 +571,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         #####################################################################
 
         # MySQL's index_type := Using + ( "BTREE" | "HASH" )
-        index_type = Optional(assign("using", ident("index_type")))
+        index_type = Optional(assign("using", ident))
 
         index_column_names = (
             LB
@@ -835,11 +835,15 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         #############################################################
         special_ident = keyword("masking policy") | identifier / (lambda t: t[0].lower())
         declare_variable = assign("declare", column_definition)
-        set_variable = SET + delimited_list((
+        set_one_variable = SET + (
+            (special_ident + Optional(EQ) + expression)
+            / (lambda t: {t[0].lower(): t[1].lower() if isinstance(t[1], str) else t[1]})
+        )("set")
+        set_variables = SET + delimited_list((
             (special_ident + Optional(EQ) + expression)
             / (lambda t: {t[0].lower(): t[1].lower() if isinstance(t[1], str) else t[1]})
         ))("set")
-        unset_variable = assign("unset", special_ident)
+        unset_one_variable = assign("unset", special_ident)
 
         copy_options = Forward()
         copy_options << ZeroOrMore(MatchFirst(
@@ -880,8 +884,8 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 keyword("set data type") + column_type
                 | keyword("data type") + column_type
                 | keyword("type") + column_type
-                | set_variable
-                | unset_variable
+                | set_one_variable
+                | unset_one_variable
                 | assign("drop", column_option | special_ident)
                 | Optional(keyword("set")) + column_option
             )
@@ -1069,7 +1073,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             | (copy | alter)
             | create_trigger | create_procedure | create_function
             | explain | delimiter_command | block | if_block | leave | declare_hanlder | assign("return", expression)
-            | (Optional(keyword("alter session")).suppress() + (set_variable | unset_variable | declare_variable))
+            | (Optional(keyword("alter session")).suppress() + (set_variables | unset_one_variable | declare_variable))
         )
 
         many_command << (

@@ -875,12 +875,11 @@ class TestMySql(FuzzyTestCase):
           END;;
         """
         parse("DELIMITER ;;")
-        with Debugger():
-            result = parse(sql)
+        result = parse(sql)
         expected = [
             {"delimiter": ";;"},
             {"create_trigger": {
-                "code": {
+                "body": {"block": {
                     "columns": ["film_id", "title", "description"],
                     "insert": "film_text",
                     "query": {"select": [
@@ -888,7 +887,7 @@ class TestMySql(FuzzyTestCase):
                         {"value": "new.title"},
                         {"value": "new.description"},
                     ]},
-                },
+                }},
                 "event": "insert",
                 "name": "ins_film",
                 "table": "film",

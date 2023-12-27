@@ -171,6 +171,8 @@ class Formatter:
                 return ""
             elif "delete" in json:
                 return self.delete(json, prec)
+            elif "literal" in json:
+                return self._literal(json, prec)
             elif "substring" in json:
                 return self._substring(json, prec)
             elif "group_concat" in json:
@@ -441,18 +443,19 @@ class Formatter:
         elif isinstance(json, string_types):
             body = json.replace("'", "''")
             return f"'{body}'"
+        elif isinstance(json, dict):
+            if isinstance(json['literal'], list):
+                body = ", ".join(self._literal(v, precedence["literal"]) for v in json['literal'])
+                return f"({body})"
+
+            encoding = ""
+            if json.get("encoding"):
+                encoding = json['encoding'].upper()
+            body = json['literal'].replace("'", "''")
+            return f"{encoding}'{body}'"
         else:
             return str(json)
 
-    def _nliteral(self, json, prec=0):
-        if isinstance(json, list):
-            body = ", ".join(self._nliteral(v, precedence["nliteral"]) for v in json)
-            return f"({body})"
-        elif isinstance(json, string_types):
-            body = json.replace("'", "''")
-            return f"N'{body}'"
-        else:
-            return str(json)
 
     def _get(self, json, prec):
         v, i = json

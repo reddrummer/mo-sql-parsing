@@ -549,7 +549,7 @@ expectations = [
         ],
         "constraint": [
             {"primary_key": {"columns": "rental_id"}},
-            {"index": {"unique": True, "columns": ["rental_date", ["inventory_id", "customer_id"]]}},
+            {"index": {"unique": True, "columns": ["rental_date", "inventory_id", "customer_id"]}},
             {"index": {"name": "idx_fk_inventory_id", "columns": "inventory_id"}},
             {"index": {"name": "idx_fk_customer_id", "columns": "customer_id"}},
             {"index": {"name": "idx_fk_staff_id", "columns": "staff_id"}},
