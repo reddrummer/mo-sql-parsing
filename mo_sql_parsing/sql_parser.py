@@ -100,13 +100,17 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                     Keyword(c, caseless=True)("op")
                     + LB
                     + expression("params")
-                    + Optional(keyword("default").suppress()+ expression("on_conversion_error") + keyword("ON CONVERSION ERROR").suppress())
+                    + Optional(
+                        keyword("default").suppress()
+                        + expression("on_conversion_error")
+                        + keyword("ON CONVERSION ERROR").suppress()
+                    )
                     + Optional(comma + literal_string("params") + Optional(comma + literal_string("params")))
                     + RB
                 )
                 / to_json_call
             )
-            for c in ["to_date","to_number", "to_timestamp", "to_timestamp_tz", "to_yminterval", "to_dsinterval"]
+            for c in ["to_date", "to_number", "to_timestamp", "to_timestamp_tz", "to_yminterval", "to_dsinterval"]
         ])
 
         substring = (
@@ -397,11 +401,15 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator
         unpivot_join = (
             UNPIVOT("op")
-            + Optional(keyword("EXCLUDE NULLS")("nulls") / True | keyword("INCLUDE NULLS")("nulls") / True)("kwargs")
-            + (
-                LB
+            + Group(
+                Optional(keyword("EXCLUDE NULLS")("nulls") / False | keyword("INCLUDE NULLS")("nulls") / True)
+                + LB
                 + (expression("value") + assign("for", identifier) + IN)
-                + (LB + delimited_list(expression)("in") + RB)
+                + LB
+                + Group(delimited_list(
+                    Group(expression("value") + Optional(AS + literal_string("name"))) / to_unpivot_column
+                ))("in")
+                + RB
                 + RB
                 + alias
             )("kwargs")

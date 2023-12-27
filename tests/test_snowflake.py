@@ -321,7 +321,7 @@ class TestSnowflake(TestCase):
         expected = {
             "from": [
                 "monthly_sales",
-                {"unpivot": {"value": "sales", "for": "month", "in": {"value": ["jan", "feb", "mar", "april"]}}},
+                {"unpivot": {"value": "sales", "for": "month", "in": ["jan", "feb", "mar", "april"]}},
             ],
             "orderby": {"value": "empid"},
             "select": {"all_columns": {}},

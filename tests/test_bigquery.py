@@ -560,7 +560,7 @@ class TestBigQuery(TestCase):
                         "*********************..**************..**************",
                         {"unpivot": {
                             "for": "time_interval",
-                            "in": {"value": ["x0h00m_0h30m", "x0h30m_1h00m"]},
+                            "in": ["x0h00m_0h30m", "x0h30m_1h00m"],
                             "nulls": True,
                             "value": "status",
                         }},
