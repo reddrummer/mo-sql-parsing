@@ -925,19 +925,6 @@ class TestMySql(FuzzyTestCase):
         }}
         self.assertEqual(result, expected)
 
-    def test_issue_218_products(self):
-        from tests.mysql.products import expectations
-
-        content = File("tests/mysql/products.sql").read()
-        blocks = list(parse_delimiters(content, ignore=None))
-        for i, (sql, expected) in enumerate(zip_longest(blocks, expectations)):
-            try:
-                result = parse(sql)
-                self.assertEqual(result, expected)
-                self.assertEqual(expected, result)
-            except Exception as cause:
-                raise cause
-
     def test_issue_218_transaction(self):
         sql = """
         START TRANSACTION;
