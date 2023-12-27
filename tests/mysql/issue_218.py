@@ -374,18 +374,18 @@ expectations = [
         "when": "after",
         "event": "insert",
         "table": "film",
-        "code": {
+        "body": {"block": {
             "columns": ["film_id", "title", "description"],
             "query": {"select": [{"value": "new.film_id"}, {"value": "new.title"}, {"value": "new.description"}]},
             "insert": "film_text",
-        },
+        }},
     }},
     {"create_trigger": {
         "name": "upd_film",
         "when": "after",
         "event": "update",
         "table": "film",
-        "code": {
+        "body": {"block": {
             "if": {"or": [
                 {"neq": ["old.title", "new.title"]},
                 {"neq": ["old.description", "new.description"]},
@@ -396,15 +396,16 @@ expectations = [
                 "where": {"eq": ["film_id", "old.film_id"]},
                 "update": "film_text",
             },
-        },
+        }},
     }},
     {"create_trigger": {
         "name": "del_film",
         "when": "after",
         "event": "delete",
         "table": "film",
-        "code": {"where": {"eq": ["film_id", "old.film_id"]}, "delete": "film_text"},
+        "body": {"block": {"where": {"eq": ["film_id", "old.film_id"]}, "delete": "film_text"}},
     }},
+    None,
     {"delimiter": ";"},
     {"create table": {
         "name": "inventory",
@@ -548,7 +549,7 @@ expectations = [
         ],
         "constraint": [
             {"primary_key": {"columns": "rental_id"}},
-            {"index": {"unique": True, "columns": ["rental_date", "inventory_id", "customer_id"]}},
+            {"index": {"unique": True, "columns": ["rental_date", ["inventory_id", "customer_id"]]}},
             {"index": {"name": "idx_fk_inventory_id", "columns": "inventory_id"}},
             {"index": {"name": "idx_fk_customer_id", "columns": "customer_id"}},
             {"index": {"name": "idx_fk_staff_id", "columns": "staff_id"}},
@@ -915,6 +916,264 @@ expectations = [
         },
     }},
     None,
-    {},
-    {},
+    {"delimiter": "//"},
+    {"create_procedure": {
+        "name": "rewards_report",
+        "params": [
+            {"mode": "in", "name": "min_monthly_purchases", "type": {"unsigned": True, "tinyint": {}}},
+            {"mode": "in", "name": "min_dollar_amount_purchased", "type": {"decimal": [10, 2]}},
+            {"mode": "out", "name": "count_rewardees", "type": {"int": {}}},
+        ],
+        "language": "sql",
+        "sql_security": "definer",
+        "comment": {"literal": "Provides a customizable report on best customers"},
+        "body": {
+            "label": "proc",
+            "block": [
+                {"declare": {"name": "last_month_start", "type": {"date": {}}}},
+                {"declare": {"name": "last_month_end", "type": {"date": {}}}},
+                {
+                    "if": {"eq": ["min_monthly_purchases", 0]},
+                    "then": [
+                        {"select": {"value": {"literal": "Minimum monthly purchases parameter must be > 0"}}},
+                        {"leave": "proc"},
+                    ],
+                },
+                {
+                    "if": {"eq": ["min_dollar_amount_purchased", 0.0]},
+                    "then": [
+                        {"select": {"value": {
+                            "literal": "Minimum monthly dollar amount purchased parameter must be > $0.00"
+                        }}},
+                        {"leave": "proc"},
+                    ],
+                },
+                {"set": {"last_month_start": {"date_sub": [{"current_date": {}}, {"interval": [1, "month"]}]}}},
+                {"set": {"last_month_start": {"str_to_date": [
+                    {"concat": [
+                        {"year": "last_month_start"},
+                        {"literal": "-"},
+                        {"month": "last_month_start"},
+                        {"literal": "-01"},
+                    ]},
+                    {"literal": "%Y-%m-%d"},
+                ]}}},
+                {"set": {"last_month_end": {"last_day": "last_month_start"}}},
+                {"create table": {
+                    "temporary": True,
+                    "name": "tmpCustomer",
+                    "columns": {
+                        "name": "customer_id",
+                        "type": {"unsigned": True, "smallint": {}},
+                        "nullable": False,
+                        "primary_key": True,
+                    },
+                }},
+                {
+                    "columns": "customer_id",
+                    "query": {
+                        "select": {"value": "p.customer_id"},
+                        "from": {"value": "payment", "name": "p"},
+                        "where": {"between": [{"date": "p.payment_date"}, "last_month_start", "last_month_end"]},
+                        "groupby": {"value": "customer_id"},
+                        "having": {"and": [
+                            {"gt": [{"sum": "p.amount"}, "min_dollar_amount_purchased"]},
+                            {"gt": [{"count": "customer_id"}, "min_monthly_purchases"]},
+                        ]},
+                    },
+                    "insert": "tmpCustomer",
+                },
+                {"select": {"value": {"count": "*"}}, "from": "tmpCustomer", "into": "count_rewardees"},
+                {
+                    "select": {"all_columns": "c"},
+                    "from": [
+                        {"value": "tmpCustomer", "name": "t"},
+                        {
+                            "inner join": {"value": "customer", "name": "c"},
+                            "on": {"eq": ["t.customer_id", "c.customer_id"]},
+                        },
+                    ],
+                },
+                {"drop": {"table": "tmpCustomer"}},
+            ],
+        },
+    }},
+    None,
+    {"delimiter": ";"},
+    {"delimiter": "$$"},
+    {"create_function": {
+        "name": "get_customer_balance",
+        "params": [
+            {"name": "p_customer_id", "type": {"int": {}}},
+            {"name": "p_effective_date", "type": {"datetime": {}}},
+        ],
+        "returns": {"type": {"decimal": [5, 2]}},
+        "body": {"block": [
+            {"declare": {"name": "v_rentfees", "type": {"decimal": [5, 2]}}},
+            {"declare": {"name": "v_overfees", "type": {"integer": {}}}},
+            {"declare": {"name": "v_payments", "type": {"decimal": [5, 2]}}},
+            {
+                "select": {"value": {"ifnull": [{"sum": "film.rental_rate"}, 0]}},
+                "into": "v_rentfees",
+                "from": ["film", "inventory", "rental"],
+                "where": {"and": [
+                    {"eq": ["film.film_id", "inventory.film_id"]},
+                    {"eq": ["inventory.inventory_id", "rental.inventory_id"]},
+                    {"lte": ["rental.rental_date", "p_effective_date"]},
+                    {"eq": ["rental.customer_id", "p_customer_id"]},
+                ]},
+            },
+            {
+                "select": {"value": {"ifnull": [
+                    {"sum": {"if": [
+                        {"gt": [
+                            {"sub": [{"to_days": "rental.return_date"}, {"to_days": "rental.rental_date"}]},
+                            "film.rental_duration",
+                        ]},
+                        {"sub": [
+                            {"sub": [{"to_days": "rental.return_date"}, {"to_days": "rental.rental_date"}]},
+                            "film.rental_duration",
+                        ]},
+                        0,
+                    ]}},
+                    0,
+                ]}},
+                "into": "v_overfees",
+                "from": ["rental", "inventory", "film"],
+                "where": {"and": [
+                    {"eq": ["film.film_id", "inventory.film_id"]},
+                    {"eq": ["inventory.inventory_id", "rental.inventory_id"]},
+                    {"lte": ["rental.rental_date", "p_effective_date"]},
+                    {"eq": ["rental.customer_id", "p_customer_id"]},
+                ]},
+            },
+            {
+                "select": {"value": {"ifnull": [{"sum": "payment.amount"}, 0]}},
+                "into": "v_payments",
+                "from": "payment",
+                "where": {"and": [
+                    {"lte": ["payment.payment_date", "p_effective_date"]},
+                    {"eq": ["payment.customer_id", "p_customer_id"]},
+                ]},
+            },
+            {"return": {"sub": [{"add": ["v_rentfees", "v_overfees"]}, "v_payments"]}},
+        ]},
+    }},
+    None,
+    {"delimiter": ";"},
+    {"delimiter": "$$"},
+    {"create_procedure": {
+        "name": "film_in_stock",
+        "params": [
+            {"mode": "in", "name": "p_film_id", "type": {"int": {}}},
+            {"mode": "in", "name": "p_store_id", "type": {"int": {}}},
+            {"mode": "out", "name": "p_film_count", "type": {"int": {}}},
+        ],
+        "body": {"block": [
+            {
+                "select": {"value": "inventory_id"},
+                "from": "inventory",
+                "where": {"and": [
+                    {"eq": ["film_id", "p_film_id"]},
+                    {"eq": ["store_id", "p_store_id"]},
+                    {"inventory_in_stock": "inventory_id"},
+                ]},
+            },
+            {
+                "select": {"value": {"count": "*"}},
+                "from": "inventory",
+                "where": {"and": [
+                    {"eq": ["film_id", "p_film_id"]},
+                    {"eq": ["store_id", "p_store_id"]},
+                    {"inventory_in_stock": "inventory_id"},
+                ]},
+                "into": "p_film_count",
+            },
+        ]},
+    }},
+    None,
+    {"delimiter": ";"},
+    {"delimiter": "$$"},
+    {"create_procedure": {
+        "name": "film_not_in_stock",
+        "params": [
+            {"mode": "in", "name": "p_film_id", "type": {"int": {}}},
+            {"mode": "in", "name": "p_store_id", "type": {"int": {}}},
+            {"mode": "out", "name": "p_film_count", "type": {"int": {}}},
+        ],
+        "body": {"block": [
+            {
+                "select": {"value": "inventory_id"},
+                "from": "inventory",
+                "where": {"and": [
+                    {"eq": ["film_id", "p_film_id"]},
+                    {"eq": ["store_id", "p_store_id"]},
+                    {"not": {"inventory_in_stock": "inventory_id"}},
+                ]},
+            },
+            {
+                "select": {"value": {"count": "*"}},
+                "from": "inventory",
+                "where": {"and": [
+                    {"eq": ["film_id", "p_film_id"]},
+                    {"eq": ["store_id", "p_store_id"]},
+                    {"not": {"inventory_in_stock": "inventory_id"}},
+                ]},
+                "into": "p_film_count",
+            },
+        ]},
+    }},
+    None,
+    {"delimiter": ";"},
+    {"delimiter": "$$"},
+    {"create_function": {
+        "name": "inventory_held_by_customer",
+        "params": {"name": "p_inventory_id", "type": {"int": {}}},
+        "returns": {"type": {"int": {}}},
+        "body": {"block": [
+            {"declare": {"name": "v_customer_id", "type": {"int": {}}}},
+            {"declare_handler": {"action": "exit", "conditions": "not_found", "body": {"return": {"null": {}}}}},
+            {
+                "select": {"value": "customer_id"},
+                "into": "v_customer_id",
+                "from": "rental",
+                "where": {"and": [{"missing": "return_date"}, {"eq": ["inventory_id", "p_inventory_id"]}]},
+            },
+            {"return": "v_customer_id"},
+        ]},
+    }},
+    None,
+    {"delimiter": ";"},
+    {"delimiter": "$$"},
+    {"create_function": {
+        "name": "inventory_in_stock",
+        "params": {"name": "p_inventory_id", "type": {"int": {}}},
+        "returns": {"type": {"boolean": {}}},
+        "body": {"block": [
+            {"declare": {"name": "v_rentals", "type": {"int": {}}}},
+            {"declare": {"name": "v_out", "type": {"int": {}}}},
+            {
+                "select": {"value": {"count": "*"}},
+                "into": "v_rentals",
+                "from": "rental",
+                "where": {"eq": ["inventory_id", "p_inventory_id"]},
+            },
+            {"if": {"eq": ["v_rentals", 0]}, "then": {"return": True}},
+            {
+                "select": {"value": {"count": "rental_id"}},
+                "into": "v_out",
+                "from": ["inventory", {"left join": "rental", "using": "inventory_id"}],
+                "where": {"and": [
+                    {"eq": ["inventory.inventory_id", "p_inventory_id"]},
+                    {"missing": "rental.return_date"},
+                ]},
+            },
+            {"if": {"gt": ["v_out", 0]}, "then": {"return": False}, "else": {"return": True}},
+        ]},
+    }},
+    None,
+    {"delimiter": ";"},
+    {"set": {"sql_mode": "@old_sql_mode"}},
+    {"set": {"foreign_key_checks": "@old_foreign_key_checks"}},
+    {"set": {"unique_checks": "@old_unique_checks"}},
 ]

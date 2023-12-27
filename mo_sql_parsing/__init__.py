@@ -108,7 +108,10 @@ def _parse(parser, sql, null, calls):
             o[n] = null
         if not output:
             continue
-        acc.extend(listwrap(output))
+        if isinstance(output, list):
+            acc.extend(output)
+        else:
+            acc.append(output)
     if len(acc) == 1:
         return acc[0]
     if not acc:
@@ -151,7 +154,8 @@ delimiter_pattern = re.compile(r"^\s*delimiter\s+([^\n]+)$", re.IGNORECASE | re.
 
 def parse_delimiters(sql, ignore=";"):
     delimiter = ";"
-    splitter = re.compile(re.escape(delimiter) + r"\s*\n")
+    ender = r"\s*(\n|$)"
+    splitter = re.compile(re.escape(delimiter) + ender)
 
     while True:
         found = delimiter_pattern.search(sql)
@@ -165,12 +169,18 @@ def parse_delimiters(sql, ignore=";"):
             if delimiter == ignore:
                 yield block
             else:
-                yield from splitter.split(block)
+                while True:
+                    inner_found = splitter.search(block)
+                    if not inner_found:
+                        yield block
+                        break
+                    yield block[:inner_found.start()]
+                    block = block[inner_found.end():]
         if not found:
             break
         yield found.group(0)
         delimiter = found.group(1).strip()
-        splitter = re.compile(re.escape(delimiter) + r"\s*\n")
+        splitter = re.compile(re.escape(delimiter) + ender)
 
 
 __all__ = ["parse", "format", "parse_mysql", "parse_sqlserver", "parse_bigquery", "normal_op", "simple_op", "SQL_NULL"]

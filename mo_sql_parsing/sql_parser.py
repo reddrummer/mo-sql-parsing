@@ -447,9 +447,11 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         values = (VALUES + delimited_list(row)) / to_values
 
         window_clause = identifier("name") + AS + (identifier | over_clause)("value")
+        into = Optional(assign("into", Group(identifier + Optional(LB + delimited_list(ident) + RB))))
 
         unordered_sql = Group(
             (values | selection)
+            + into
             + Optional((FROM + delimited_list(table_source) + ZeroOrMore(join))("from"))
             + Optional(WHERE + expression("where"))
             + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
@@ -458,6 +460,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 & Optional(WINDOW + delimited_list(Group(window_clause))("window"))
                 & Optional(QUALIFY + expression("qualify"))
             )
+            + into
         )
 
         with NO_WHITESPACE:
@@ -637,6 +640,8 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         )("create table")
 
 
+        definer = Optional(keyword("definer").suppress() + EQ + identifier("definer"))
+
         # CREATE
         #     [OR REPLACE]
         #     [ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
@@ -645,7 +650,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         #     VIEW view_name [(column_list)]
         #     AS select_statement
         #     [WITH [CASCADED | LOCAL] CHECK OPTION]
-        create_view = (
+        create_view = Group(
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
             + Optional(
@@ -653,7 +658,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 + EQ
                 + (keyword("merge") | keyword("temptable") | keyword("undefined"))("algorithm")
             )
-            + Optional(keyword("definer").suppress() + EQ + identifier("definer"))
+            + definer
             + Optional(assign("sql security", (keyword("definer") | keyword("invoker"))))
             + temporary
             + VIEW.suppress()
@@ -962,8 +967,9 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         )
 
         many_command = Forward()
-        block = BEGIN + Group(many_command) + END
+        block = Group(Optional(identifier("label")+":") + BEGIN + Group(many_command)("block") + END)
         if_block = assign("if", expression) + assign("then", many_command) + Optional(assign("else", many_command)) +  keyword("end if").suppress()
+        leave = assign("leave", identifier)
 
         create_trigger = assign("create trigger", (
             identifier("name")
@@ -972,8 +978,77 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + ON
             + identifier("table")
             + keyword("for each row").suppress()
-            + block("code")
+            + statement("body")
         ))
+
+        proc_param = Group(
+            Optional(IN | keyword("out") | keyword("inout")/["in", "out"])("mode")
+            + identifier("name")
+            + column_type
+        )
+
+        characteristic = ZeroOrMore(MatchFirst([
+            assign("comment", literal_string),
+            assign("language", keyword("sql")),
+            keyword("not deterministic") / {"deterministic": False},
+            keyword("deterministic") / {"deterministic": True},
+            keyword("contains sql") / {"contains_sql": True},
+            keyword("no sql") / {"contains_sql": False},
+            keyword("reads sql data") / {"sql_data": "read"},
+            keyword("modifies sql data") / {"sql_data": "write"},
+            assign("sql security", keyword("definer") | keyword("invoker")),
+        ]))
+
+        create_procedure = Group(
+            CREATE
+            + definer
+            + keyword("procedure")
+            + identifier("name")
+            + LB
+            + Group(delimited_list(proc_param))("params")
+            + RB
+            + characteristic
+            + statement("body")
+        )("create_procedure")
+
+        create_function = Group(
+            CREATE
+            + definer
+            + keyword("function")
+            + identifier("name")
+            + LB
+            + Group(delimited_list(Group(identifier("name") + column_type)))("params")
+            + RB
+            + assign("returns", column_type)
+            + characteristic
+            + statement("body")
+        )("create_function")
+
+        handler_condition = Group(MatchFirst([
+            keyword("sqlwarning"),
+            keyword("not found"),
+            keyword("sqlexception"),
+            assign("sqlstate", expression),
+            int_num("error_code"),
+            expression,
+        ]))
+
+        declare_hanlder = Group(
+            keyword("declare")
+            +Group(
+                keyword("continue")
+                | keyword("exit")
+                | keyword("undo")
+            )("action")
+            + keyword("handler for")
+            + delimited_list(handler_condition)("conditions")
+            + statement("body")
+        )("declare_handler")
+
+
+
+
+
 
         #############################################################
         # FINALLY ASSEMBLE THE PARSER
@@ -986,20 +1061,20 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
         debugger.__enter__()
 
-        statement << (
+        statement << Group(
             query
             | (insert | update | delete | merge | truncate | use_schema)
             | (create_table | create_view | create_cache | create_index | create_schema)
             | drops
             | (copy | alter)
+            | create_trigger | create_procedure | create_function
+            | explain | delimiter_command | block | if_block | leave | declare_hanlder | assign("return", expression)
             | (Optional(keyword("alter session")).suppress() + (set_variable | unset_variable | declare_variable))
-            | create_trigger
         )
 
-        command = Group(delimiter_command | explain | statement | if_block)
         many_command << (
             ZeroOrMore(delimiter_pattern) +
-            Optional(command) +
-            ZeroOrMore(OneOrMore(delimiter_pattern) + Optional(command))
+            Optional(statement) +
+            ZeroOrMore(OneOrMore(delimiter_pattern) + Optional(statement))
         )
         return many_command.finalize()

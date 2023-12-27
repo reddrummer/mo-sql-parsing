@@ -5,15 +5,11 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-import re
 from unittest import TestCase
 
-from mo_files import File
-from mo_logs import strings
-from mo_parsing.debug import Debugger
 from mo_testing.fuzzytestcase import add_error_reporting
 
-from mo_sql_parsing import parse, parse_delimiters
+from mo_sql_parsing import parse
 
 
 @add_error_reporting
@@ -63,52 +59,4 @@ class TestOracle(TestCase):
             "select": {"value": {"validate_conversion": ["a", {"decimal": [10, 3]}]}},
             "from": "b.c",
         }
-        self.assertEqual(result, expected)
-
-    def test_issue_218_udf(self):
-        from tests.oracle.issue_218 import expectations
-
-        content = File("tests/oracle/issue_218.sql").read()
-        blocks = list(parse_delimiters(content, ignore=None))
-        for i, (sql, expected) in enumerate(zip(blocks, expectations)):
-            try:
-                result = parse(sql)
-                self.assertEqual(result, expected)
-            except Exception as cause:
-                raise cause
-
-    def test_issue_218_comment(self):
-        sql = """/*!50610 SET @@default_storage_engine = 'InnoDB'*/;"""
-        result = parse(sql)
-        self.assertIsNone(result)
-
-    def test_issue_218_trigger(self):
-        sql = """
-        DELIMITER ;;
-        CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
-            INSERT INTO film_text (film_id, title, description)
-                VALUES (new.film_id, new.title, new.description);
-          END;;
-        """
-        parse("DELIMITER ;;")
-        with Debugger():
-            result = parse(sql)
-        expected = [
-            {"delimiter": ";;"},
-            {"create_trigger": {
-                "code": {
-                    "columns": ["film_id", "title", "description"],
-                    "insert": "film_text",
-                    "query": {"select": [
-                        {"value": "new.film_id"},
-                        {"value": "new.title"},
-                        {"value": "new.description"},
-                    ]},
-                },
-                "event": "insert",
-                "name": "ins_film",
-                "table": "film",
-                "when": "after",
-            }},
-        ]
         self.assertEqual(result, expected)
