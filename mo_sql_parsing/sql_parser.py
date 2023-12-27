@@ -602,7 +602,9 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + RB
         )
 
-        column_def_delete = assign("on delete", (keyword("cascade") | keyword("restrict") | keyword("set null") | keyword("set default")),)
+        column_def_delete = assign(
+            "on delete", (keyword("cascade") | keyword("restrict") | keyword("set null") | keyword("set default")),
+        )
         table_def_foreign_key = FOREIGN_KEY + Optional(
             Optional(identifier("index_name"))
             + index_column_names
@@ -612,28 +614,33 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
         index_options = ZeroOrMore(identifier / (lambda t: {t[0]: True}))
 
-        table_constraint_definition = Group(Optional(CONSTRAINT + identifier("name")) + (
-            assign(
-                "primary key",
-                Group(index_type
-                + index_column_names
-                + index_type
-                + Optional(assign("comment", literal_string))
-                + index_options,
-            ))
-            | Group(
-                Optional(flag("unique"))
-                + Optional(INDEX | KEY)
-                + Optional(identifier("name"))
-                + index_column_names
-                + index_type
-                + Optional(assign("comment", literal_string))
-                + index_options
-            )("index")
-            | assign("check", LB + expression + RB)
-            | table_def_foreign_key("foreign_key")
-            | assign("fulltext key", identifier("name") + index_column_names)
-        ))
+        table_constraint_definition = Group(
+            Optional(CONSTRAINT + identifier("name"))
+            + (
+                assign(
+                    "primary key",
+                    Group(
+                        index_type
+                        + index_column_names
+                        + index_type
+                        + Optional(assign("comment", literal_string))
+                        + index_options,
+                    ),
+                )
+                | Group(
+                    Optional(flag("unique"))
+                    + Optional(INDEX | KEY)
+                    + Optional(identifier("name"))
+                    + index_column_names
+                    + index_type
+                    + Optional(assign("comment", literal_string))
+                    + index_options
+                )("index")
+                | assign("check", LB + expression + RB)
+                | table_def_foreign_key("foreign_key")
+                | assign("fulltext key", identifier("name") + index_column_names)
+            )
+        )
 
         table_element = table_constraint_definition("constraint") | column_definition("columns")
         temporary = Optional(
@@ -662,17 +669,8 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + Optional(CLUSTER_BY.suppress() + LB + delimited_list(identifier) + RB)("cluster_by")
         )("create table")
 
-
         definer = Optional(keyword("definer").suppress() + EQ + identifier("definer"))
 
-        # CREATE
-        #     [OR REPLACE]
-        #     [ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
-        #     [DEFINER = user]
-        #     [SQL SECURITY { DEFINER | INVOKER }]
-        #     VIEW view_name [(column_list)]
-        #     AS select_statement
-        #     [WITH [CASCADED | LOCAL] CHECK OPTION]
         create_view = Group(
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
@@ -705,11 +703,14 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + index_options
         )("create index")
 
-        create_schema = assign("create schema", Group(
-            Optional(keyword("or") + flag("replace"))(INDEX | KEY)
-            + Optional((keyword("if not exists") / False)("replace"))
-            + identifier("name")
-        ))
+        create_schema = assign(
+            "create schema",
+            Group(
+                Optional(keyword("or") + flag("replace"))(INDEX | KEY)
+                + Optional((keyword("if not exists") / False)("replace"))
+                + identifier("name")
+            ),
+        )
 
         use_schema = assign("use", identifier)
 
@@ -731,10 +732,13 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + Optional(AS + query("query"))
         )("cache")
 
-        drops = assign("drop", MatchFirst([
-            keyword(item).suppress() + Optional(flag("if exists")) + Group(identifier)(item)
-            for item in ["table", "view", "index", "schema"]
-        ]))
+        drops = assign(
+            "drop",
+            MatchFirst([
+                keyword(item).suppress() + Optional(flag("if exists")) + Group(identifier)(item)
+                for item in ["table", "view", "index", "schema"]
+            ]),
+        )
 
         returning = Optional(delimited_list(select_column)("returning"))
 
@@ -854,7 +858,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         )
 
         #############################################################
-        # PROCEDURAL
+        # GET/SET
         #############################################################
         special_ident = keyword("masking policy") | identifier / (lambda t: t[0].lower())
         declare_variable = assign("declare", column_definition)
@@ -993,25 +997,35 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             ),
         )
 
+        #############################################################
+        # USER FUNCTIONS
+        #############################################################
+
         many_command = Forward()
-        block = Group(Optional(identifier("label")+":") + BEGIN + Group(many_command)("block") + END)
-        if_block = assign("if", expression) + assign("then", many_command) + Optional(assign("else", many_command)) +  keyword("end if").suppress()
+        block = Group(Optional(identifier("label") + ":") + BEGIN + Group(many_command)("block") + END)
+        if_block = (
+            assign("if", expression)
+            + assign("then", many_command)
+            + Optional(assign("else", many_command))
+            + keyword("end if").suppress()
+        )
         leave = assign("leave", identifier)
 
-        create_trigger = assign("create trigger", (
-            identifier("name")
-            + MatchFirst([keyword(k) for k in ["before", "after"]])("when")
-            + MatchFirst([keyword(k) for k in ["insert", "update", "delete"]])("event")
-            + ON
-            + identifier("table")
-            + keyword("for each row").suppress()
-            + statement("body")
-        ))
+        create_trigger = assign(
+            "create trigger",
+            (
+                identifier("name")
+                + MatchFirst([keyword(k) for k in ["before", "after"]])("when")
+                + MatchFirst([keyword(k) for k in ["insert", "update", "delete"]])("event")
+                + ON
+                + identifier("table")
+                + keyword("for each row").suppress()
+                + statement("body")
+            ),
+        )
 
         proc_param = Group(
-            Optional(IN | keyword("out") | keyword("inout")/["in", "out"])("mode")
-            + identifier("name")
-            + column_type
+            Optional(IN | keyword("out") | keyword("inout") / ["in", "out"])("mode") + identifier("name") + column_type
         )
 
         characteristic = ZeroOrMore(MatchFirst([
@@ -1062,20 +1076,19 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
         declare_hanlder = Group(
             keyword("declare")
-            +Group(
-                keyword("continue")
-                | keyword("exit")
-                | keyword("undo")
-            )("action")
+            + Group(keyword("continue") | keyword("exit") | keyword("undo"))("action")
             + keyword("handler for")
             + delimited_list(handler_condition)("conditions")
             + statement("body")
         )("declare_handler")
 
+        transact = (
+            Group(keyword("start transaction")("op")) / to_json_call
+            | Group(keyword("commit")("op")) / to_json_call
+            | Group(keyword("rollback")("op")) / to_json_call
+        )
 
-
-
-
+        flow = block | if_block | leave | assign("return", expression)
 
         #############################################################
         # FINALLY ASSEMBLE THE PARSER
@@ -1094,14 +1107,20 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             | (create_table | create_view | create_cache | create_index | create_schema)
             | drops
             | (copy | alter)
-            | create_trigger | create_procedure | create_function
-            | explain | delimiter_command | block | if_block | leave | declare_hanlder | assign("return", expression)
+            | create_trigger
+            | create_procedure
+            | create_function
+            | explain
+            | delimiter_command
+            | declare_hanlder
+            | flow
+            | transact
             | (Optional(keyword("alter session")).suppress() + (set_variables | unset_one_variable | declare_variable))
         )
 
         many_command << (
-            ZeroOrMore(delimiter_pattern) +
-            Optional(statement) +
-            ZeroOrMore(OneOrMore(delimiter_pattern) + Optional(statement))
+            ZeroOrMore(delimiter_pattern)
+            + Optional(statement)
+            + ZeroOrMore(OneOrMore(delimiter_pattern) + Optional(statement))
         )
         return many_command.finalize()
