@@ -422,7 +422,6 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 Group(joins)("op")
                 + table_source("join")
                 + Optional((ON + expression("on")) | (USING + expression("using")))
-                | (Group(WINDOW)("op") + Group(identifier("name") + AS + over_clause("value"))("join"))
             )
             / to_join_call
         )
@@ -468,7 +467,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
         values = (VALUES + delimited_list(row)) / to_values
 
-        window_clause = identifier("name") + AS + (identifier | over_clause)("value")
+        named_over_clause = Group(identifier("name") + AS + (identifier | over_clause)("value"))
 
         unordered_sql = Group(
             (values | selection)
@@ -477,7 +476,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
             + (
                 Optional(HAVING + expression("having"))
-                & Optional(WINDOW + delimited_list(Group(window_clause))("window"))
+                & Optional(WINDOW + delimited_list(named_over_clause)("window"))
                 & Optional(QUALIFY + expression("qualify"))
             )
         )
