@@ -96,6 +96,25 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             for c in ["cast", "safe_cast", "try_cast", "validate_conversion", "convert"]
         ])
 
+        oracle_casting = MatchFirst([
+            (
+                Group(
+                    Keyword(c, caseless=True)("op")
+                    + LB
+                    + expression("params")
+                    + Optional(
+                        keyword("default").suppress()
+                        + expression("on_conversion_error")
+                        + keyword("ON CONVERSION ERROR").suppress()
+                    )
+                    + Optional(comma + literal_string("params") + Optional(comma + literal_string("params")))
+                    + RB
+                )
+                / to_json_call
+            )
+            for c in ["to_date", "to_number", "to_timestamp", "to_timestamp_tz", "to_yminterval", "to_dsinterval"]
+        ])
+
         substring = (
             Group(
                 keyword("substring")("op")
@@ -325,6 +344,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             | case
             | switch
             | casting
+            | oracle_casting
             | substring
             | distinct
             | trim
@@ -383,11 +403,15 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator
         unpivot_join = (
             UNPIVOT("op")
-            + Optional(keyword("EXCLUDE NULLS")("nulls") / True | keyword("INCLUDE NULLS")("nulls") / True)("kwargs")
-            + (
-                LB
+            + Group(
+                Optional(keyword("EXCLUDE NULLS")("nulls") / False | keyword("INCLUDE NULLS")("nulls") / True)
+                + LB
                 + (expression("value") + assign("for", identifier) + IN)
-                + (LB + delimited_list(expression)("in") + RB)
+                + LB
+                + Group(delimited_list(
+                    Group(expression("value") + Optional(AS + literal_string("name"))) / to_unpivot_column
+                ))("in")
+                + RB
                 + RB
                 + alias
             )("kwargs")
@@ -400,7 +424,6 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 Group(joins)("op")
                 + table_source("join")
                 + Optional((ON + expression("on")) | (USING + expression("using")))
-                | (Group(WINDOW)("op") + Group(identifier("name") + AS + over_clause("value"))("join"))
             )
             / to_join_call
         )
@@ -446,7 +469,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         row = (LB + delimited_list(Group(expression)) + RB) / to_row
         values = (VALUES + delimited_list(row)) / to_values
 
-        window_clause = identifier("name") + AS + (identifier | over_clause)("value")
+        named_over_clause = Group(identifier("name") + AS + (identifier | over_clause)("value"))
         into = Optional(assign("into", Group(identifier + Optional(LB + delimited_list(ident) + RB))))
 
         unordered_sql = Group(
@@ -457,7 +480,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + Optional(GROUP_BY + delimited_list(Group(named_column))("groupby"))
             + (
                 Optional(HAVING + expression("having"))
-                & Optional(WINDOW + delimited_list(Group(window_clause))("window"))
+                & Optional(WINDOW + delimited_list(named_over_clause)("window"))
                 & Optional(QUALIFY + expression("qualify"))
             )
             + into
