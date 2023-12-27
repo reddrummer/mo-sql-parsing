@@ -106,9 +106,13 @@ def _parse(parser, sql, null, calls):
         output = scrub(parse_result)
         for o, n in _utils.null_locations:
             o[n] = null
-        return output
+        if not output:
+            continue
+        acc.extend(listwrap(output))
     if len(acc) == 1:
         return acc[0]
+    if not acc:
+        return None
     return acc
 
 
@@ -145,19 +149,28 @@ def normal_op(op, args, kwargs):
 delimiter_pattern = re.compile(r"^\s*delimiter\s+([^\n]+)$", re.IGNORECASE | re.MULTILINE)
 
 
-def parse_delimiters(sql):
-    splitter = re.compile(r";\s*\n")
+def parse_delimiters(sql, ignore=";"):
+    delimiter = ";"
+    splitter = re.compile(re.escape(delimiter) + r"\s*\n")
 
     while True:
         found = delimiter_pattern.search(sql)
         if found:
             block, sql = sql[:found.start()], sql[found.end():]
-            yield from splitter.split(block)
-            delimiter = found.group(1).strip()
-            splitter = re.compile(re.escape(delimiter) + r"\s*\n")
+            block = block.strip()
         else:
-            yield from splitter.split(sql)
+            block = sql.strip()
+
+        if block:
+            if delimiter == ignore:
+                yield block
+            else:
+                yield from splitter.split(block)
+        if not found:
             break
+        yield found.group(0)
+        delimiter = found.group(1).strip()
+        splitter = re.compile(re.escape(delimiter) + r"\s*\n")
 
 
 __all__ = ["parse", "format", "parse_mysql", "parse_sqlserver", "parse_bigquery", "normal_op", "simple_op", "SQL_NULL"]

@@ -7,7 +7,6 @@
 # Contact: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 from mo_parsing import debug, Null
-from mo_parsing.core import add_reset_action
 from mo_parsing.whitespaces import NO_WHITESPACE, Whitespace
 
 from mo_sql_parsing import utils
@@ -16,8 +15,7 @@ from mo_sql_parsing.types import get_column_type, time_functions, _sizes
 from mo_sql_parsing.utils import *
 from mo_sql_parsing.windows import window
 
-delimiters = {";": Literal(";").suppress()}
-delimiter_pattern = Forward()
+delimiter_pattern = Literal(";").suppress()
 
 
 def common_parser(all_columns):
@@ -35,7 +33,7 @@ def mysql_parser(all_columns):
 
 def sqlserver_parser(all_columns):
     atomic_ident = ansi_ident | mysql_backtick_ident | sqlserver_ident | simple_ident
-    return parser(regex_string | ansi_string | n_string, atomic_ident, sqlserver=True, all_columns=all_columns)
+    return parser(regex_string | ansi_string, atomic_ident, sqlserver=True, all_columns=all_columns)
 
 
 def bigquery_parser(all_columns):
@@ -50,7 +48,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
 
     ident = Combine(delimited_list(simple_ident, separator=".", combine=True))
 
-    with (Whitespace() as white):
+    with Whitespace() as white:
         rest_of_line = Regex(r"[^\n]*")
 
         white.add_ignore(Literal("--") + rest_of_line)
@@ -583,23 +581,21 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             Optional(identifier("index_name"))
             + index_column_names
             + column_def_references
-            + ZeroOrMore(
-                column_def_delete | assign("on update", keyword("cascade") )
-            )
+            + ZeroOrMore(column_def_delete | assign("on update", keyword("cascade")))
         )
 
         index_options = ZeroOrMore(identifier / (lambda t: {t[0]: True}))
 
-        table_constraint_definition = Optional(CONSTRAINT + identifier("name")) + (
+        table_constraint_definition = Group(Optional(CONSTRAINT + identifier("name")) + (
             assign(
                 "primary key",
-                index_type
+                Group(index_type
                 + index_column_names
                 + index_type
                 + Optional(assign("comment", literal_string))
                 + index_options,
-            )
-            | (
+            ))
+            | Group(
                 Optional(flag("unique"))
                 + Optional(INDEX | KEY)
                 + Optional(identifier("name"))
@@ -611,14 +607,14 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             | assign("check", LB + expression + RB)
             | table_def_foreign_key("foreign_key")
             | assign("fulltext key", identifier("name") + index_column_names)
-        )
+        ))
 
         table_element = table_constraint_definition("constraint") | column_definition("columns")
         temporary = Optional(
             (Keyword("temporary", caseless=True) | Keyword("temp", caseless=True))("temporary") / True
         ) + Optional(flag("transient"))
 
-        create_table = (
+        create_table = Group(
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
             + temporary
@@ -640,6 +636,15 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + Optional(CLUSTER_BY.suppress() + LB + delimited_list(identifier) + RB)("cluster_by")
         )("create table")
 
+
+        # CREATE
+        #     [OR REPLACE]
+        #     [ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
+        #     [DEFINER = user]
+        #     [SQL SECURITY { DEFINER | INVOKER }]
+        #     VIEW view_name [(column_list)]
+        #     AS select_statement
+        #     [WITH [CASCADED | LOCAL] CHECK OPTION]
         create_view = (
             keyword("create")
             + Optional(keyword("or") + flag("replace"))
@@ -648,12 +653,15 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 + EQ
                 + (keyword("merge") | keyword("temptable") | keyword("undefined"))("algorithm")
             )
+            + Optional(keyword("definer").suppress() + EQ + identifier("definer"))
+            + Optional(assign("sql security", (keyword("definer") | keyword("invoker"))))
             + temporary
             + VIEW.suppress()
             + Optional((keyword("if not exists") / False)("replace"))
             + identifier("name")
             + AS
             + query("query")
+            + Optional(WITH + (keyword("cascaded") | keyword("local")) + keyword("check option").suppress())("check")
         )("create view")
 
         # CREATE INDEX a ON u USING btree (e);
@@ -953,14 +961,10 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             ),
         )
 
-        block = BEGIN + Group(ZeroOrMore(statement)) + END
+        many_command = Forward()
+        block = BEGIN + Group(many_command) + END
+        if_block = assign("if", expression) + assign("then", many_command) + Optional(assign("else", many_command)) +  keyword("end if").suppress()
 
-        """
-        CREATE TRIGGER `ins_film` AFTER INSERT ON `film` FOR EACH ROW BEGIN
-            INSERT INTO film_text (film_id, title, description)
-            VALUES (new.film_id, new.title, new.description);
-        END
-        """
         create_trigger = assign("create trigger", (
             identifier("name")
             + MatchFirst([keyword(k) for k in ["before", "after"]])("when")
@@ -976,15 +980,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         #############################################################
 
         with NO_WHITESPACE:
-            def change_delimiter(tokens):
-                chars = tokens[0].strip()
-                delimiter = delimiters.get(chars)
-                if not delimiter:
-                    delimiter = delimiters[chars] = Literal(chars).suppress()
-                delimiter_pattern << delimiter
-                return chars
-
-            delimiter_command = assign("delimiter", Regex(r"[^\n]+") / change_delimiter)
+            delimiter_command = assign("delimiter", Regex(r"[^\n]+") / (lambda t: t[0].strip()))
 
         set_parser_names()
 
@@ -1000,16 +996,10 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             | create_trigger
         )
 
-        command = Group(delimiter_command | explain | statement)
-        return (
+        command = Group(delimiter_command | explain | statement | if_block)
+        many_command << (
             ZeroOrMore(delimiter_pattern) +
             Optional(command) +
             ZeroOrMore(OneOrMore(delimiter_pattern) + Optional(command))
-        ).finalize()
-
-
-def _reset_delimiter():
-    delimiter_pattern << delimiters[";"]
-
-
-add_reset_action(_reset_delimiter)
+        )
+        return many_command.finalize()
