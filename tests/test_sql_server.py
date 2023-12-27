@@ -267,6 +267,6 @@ class TestSqlServer(TestCase):
         expected = {
             "select": {"all_columns": {}},
             "from": "dbo.table",
-            "where": {"eq": ["a", {"nliteral": "Something"}]},
+            "where": {"eq": ["a", {"literal": "Something", "encoding": "n"}]},
         }
         self.assertEqual(result, expected)
