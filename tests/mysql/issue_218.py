@@ -1007,7 +1007,7 @@ expectations = [
             {"name": "p_customer_id", "type": {"int": {}}},
             {"name": "p_effective_date", "type": {"datetime": {}}},
         ],
-        "returns": {"type": {"decimal": [5, 2]}},
+        "returns": {"decimal": [5, 2]},
         "body": {"block": [
             {"declare": {"name": "v_rentfees", "type": {"decimal": [5, 2]}}},
             {"declare": {"name": "v_overfees", "type": {"integer": {}}}},
@@ -1129,7 +1129,7 @@ expectations = [
     {"create_function": {
         "name": "inventory_held_by_customer",
         "params": {"name": "p_inventory_id", "type": {"int": {}}},
-        "returns": {"type": {"int": {}}},
+        "returns": {"int": {}},
         "body": {"block": [
             {"declare": {"name": "v_customer_id", "type": {"int": {}}}},
             {"declare_handler": {"action": "exit", "conditions": "not_found", "body": {"return": {"null": {}}}}},
@@ -1148,7 +1148,7 @@ expectations = [
     {"create_function": {
         "name": "inventory_in_stock",
         "params": {"name": "p_inventory_id", "type": {"int": {}}},
-        "returns": {"type": {"boolean": {}}},
+        "returns": {"boolean": {}},
         "body": {"block": [
             {"declare": {"name": "v_rentals", "type": {"int": {}}}},
             {"declare": {"name": "v_out", "type": {"int": {}}}},
