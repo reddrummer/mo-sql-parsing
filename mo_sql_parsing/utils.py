@@ -705,6 +705,7 @@ def to_query(tokens):
     try:
         output["with"] = tokens["with"]
         output["with_recursive"] = tokens["with_recursive"]
+        output["using"] = tokens["using"]
 
         return output
     except Exception as cause:

@@ -64,6 +64,9 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
         (column_type, column_definition, column_def_references, column_option,) = get_column_type(
             expression, identifier, literal_string
         )
+        proc_param = Group(
+            Optional(IN | keyword("out") | keyword("inout") / ["in", "out"])("mode") + identifier("name") + column_type
+        )
 
         # CASE
         case = (
@@ -585,8 +588,22 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + (AS + LB + (query | expression)("value") + RB)
         ))
 
+        using_external_function = (USING + delimited_list(Group(assign(
+            "external function",
+            identifier("name")
+            + LB
+            + Group(delimited_list(proc_param))("params")
+            + RB
+            + assign("returns", column_type)
+            + assign("lambda", literal_string)
+        ))))("using")
+
         query << (
-            Optional(assign("with recursive", with_clause) | assign("with", with_clause)) + Group(ordered_sql)("query")
+            ZeroOrMore(MatchFirst([
+                assign("with recursive", with_clause),
+                assign("with", with_clause),
+                using_external_function
+            ])) + Group(ordered_sql)("query")
         ) / to_query
 
         #####################################################################
@@ -1022,10 +1039,6 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 + keyword("for each row").suppress()
                 + statement("body")
             ),
-        )
-
-        proc_param = Group(
-            Optional(IN | keyword("out") | keyword("inout") / ["in", "out"])("mode") + identifier("name") + column_type
         )
 
         characteristic = ZeroOrMore(MatchFirst([
