@@ -244,7 +244,7 @@ class TestAthena(TestCase):
                         {"name": "col", "type": {"varchar": {}}},
                         {"name": "secretName", "type": {"varchar": {}}},
                     ],
-                    "returns": {"type": {"varchar": {}}},
+                    "returns": {"varchar": {}},
                 }},
                 {"external_function": {
                     "lambda": {"literal": "athena_udf_v2"},
@@ -253,7 +253,7 @@ class TestAthena(TestCase):
                         {"name": "col", "type": {"varchar": {}}},
                         {"name": "secretName", "type": {"varchar": {}}},
                     ],
-                    "returns": {"type": {"varchar": {}}},
+                    "returns": {"varchar": {}},
                 }},
             ],
         }

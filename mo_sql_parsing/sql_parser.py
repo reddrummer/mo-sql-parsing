@@ -594,7 +594,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + LB
             + Group(delimited_list(proc_param))("params")
             + RB
-            + assign("returns", column_type)
+            + assign("returns", column_type/list)
             + assign("lambda", literal_string)
         ))))("using")
 
@@ -1073,7 +1073,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + LB
             + Group(delimited_list(Group(identifier("name") + column_type)))("params")
             + RB
-            + assign("returns", column_type)
+            + assign("returns", column_type/list)
             + characteristic
             + statement("body")
         )("create_function")
