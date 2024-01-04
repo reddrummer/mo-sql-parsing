@@ -494,14 +494,6 @@ def to_join_call(tokens):
     return output
 
 
-def to_pivot_call(tokens):
-    return {"pivot": dict(tokens["kwargs"])}
-
-
-def to_unpivot_call(tokens):
-    return {"unpivot": dict(tokens["kwargs"])}
-
-
 def to_expression_call(tokens):
     if set(tokens.keys()) & {"over", "within", "filter"}:
         return
@@ -634,6 +626,14 @@ def to_unpivot_column(tokens):
     if not name:
         return expr
     return {"name": name['literal'], "value": expr}
+
+
+def to_pivot_column(tokens):
+    expr = tokens["value"][0]
+    name = tokens["name"]
+    if not name:
+        return expr
+    return {"name": name, "value": expr}
 
 
 def to_union_call(tokens):

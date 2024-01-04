@@ -1440,8 +1440,7 @@ class TestBigQuery(TestCase):
                     "groupby": [{"value": 1}, {"value": 2}, {"value": 3}, {"value": 4}],
                 },
                 {"pivot": {
-                    "name": "jobs",
-                    "aggregate": {"sum": "jobs"},
+                    "aggregate": {"name": "jobs", "value": {"sum": "jobs"}},
                     "for": "statementType",
                     "in": {"literal": [
                         "BEGIN_TRANSACTION",
@@ -1656,3 +1655,101 @@ class TestBigQuery(TestCase):
         self.assertEqual(result, expected)
         new_sql = format(result)
         self.assertEqual(new_sql, """SELECT * FROM raw_data LEFT JOIN raw_data2 AS b ON raw_data.col1 = b.col2 CROSS JOIN UNNEST([raw_data2.cn1, raw_data2.cn2]) AS unnested_res""")
+
+    def test_issue_224(self):
+        sql = """
+        WITH Produce AS (
+          SELECT 'Kale' as product, 51 as sales, 'Q1' as quarter, 2020 as year UNION ALL
+          SELECT 'Kale', 23, 'Q2', 2020 UNION ALL
+          SELECT 'Kale', 45, 'Q3', 2020 UNION ALL
+          SELECT 'Kale', 3, 'Q4', 2020 UNION ALL
+          SELECT 'Kale', 70, 'Q1', 2021 UNION ALL
+          SELECT 'Kale', 85, 'Q2', 2021 UNION ALL
+          SELECT 'Apple', 77, 'Q1', 2020 UNION ALL
+          SELECT 'Apple', 0, 'Q2', 2020 UNION ALL
+          SELECT 'Apple', 1, 'Q1', 2021
+          )
+        SELECT * FROM Produce
+        PIVOT(
+          max(sales) as max_sales, 
+          min(sales) as min_sales
+          FOR quarter IN ('Q1', 'Q2','Q3', 'Q4')
+          );"""
+        result = parse(sql)
+        expected = {
+            "from": [
+                "Produce",
+                {
+                    "pivot": {
+                        "aggregate": [
+                            {"value": {"max": "sales"}, "name": "max_sales"},
+                            {"value": {"min": "sales"}, "name": "min_sales"},
+                        ],
+                        "for": "quarter",
+                        "in": {"literal": ["Q1", "Q2", "Q3", "Q4"]},
+                    }
+                },
+            ],
+            "select": {"all_columns": {}},
+            "with": {
+                "name": "Produce",
+                "value": {"union_all": [
+                    {"select": [
+                        {"name": "product", "value": {"literal": "Kale"}},
+                        {"name": "sales", "value": 51},
+                        {"name": "quarter", "value": {"literal": "Q1"}},
+                        {"name": "year", "value": 2020},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Kale"}},
+                        {"value": 23},
+                        {"value": {"literal": "Q2"}},
+                        {"value": 2020},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Kale"}},
+                        {"value": 45},
+                        {"value": {"literal": "Q3"}},
+                        {"value": 2020},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Kale"}},
+                        {"value": 3},
+                        {"value": {"literal": "Q4"}},
+                        {"value": 2020},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Kale"}},
+                        {"value": 70},
+                        {"value": {"literal": "Q1"}},
+                        {"value": 2021},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Kale"}},
+                        {"value": 85},
+                        {"value": {"literal": "Q2"}},
+                        {"value": 2021},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Apple"}},
+                        {"value": 77},
+                        {"value": {"literal": "Q1"}},
+                        {"value": 2020},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Apple"}},
+                        {"value": 0},
+                        {"value": {"literal": "Q2"}},
+                        {"value": 2020},
+                    ]},
+                    {"select": [
+                        {"value": {"literal": "Apple"}},
+                        {"value": 1},
+                        {"value": {"literal": "Q1"}},
+                        {"value": 2021},
+                    ]},
+                ]},
+            },
+        }
+
+        self.assertEqual(result, expected)
