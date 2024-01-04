@@ -400,7 +400,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             "pivot",
             (
                 LB
-                + Group(delimited_list(Group(expression("value") + alias)/to_pivot_column))("aggregate")
+                + Group(delimited_list(Group(expression("value") + alias) / to_pivot_column))("aggregate")
                 + (assign("for", identifier) + assign("in", expression))
                 + RB
                 + alias
@@ -598,22 +598,26 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
             + (AS + LB + (query | expression)("value") + RB)
         ))
 
-        using_external_function = (USING + delimited_list(Group(assign(
-            "external function",
-            identifier("name")
-            + LB
-            + Group(delimited_list(proc_param))("params")
-            + RB
-            + assign("returns", column_type/list)
-            + assign("lambda", literal_string)
-        ))))("using")
+        using_external_function = (
+            USING
+            + delimited_list(Group(assign(
+                "external function",
+                identifier("name")
+                + LB
+                + Group(delimited_list(proc_param))("params")
+                + RB
+                + assign("returns", column_type / list)
+                + assign("lambda", literal_string),
+            )))
+        )("using")
 
         query << (
             ZeroOrMore(MatchFirst([
                 assign("with recursive", with_clause),
                 assign("with", with_clause),
-                using_external_function
-            ])) + Group(ordered_sql)("query")
+                using_external_function,
+            ]))
+            + Group(ordered_sql)("query")
         ) / to_query
 
         #####################################################################

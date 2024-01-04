@@ -58,17 +58,13 @@ class TestBigQuery(TestCase):
             "from": "finishers",
             "window": {
                 "name": "w1",
-                "value": {
-                    "orderby": {"sort": "asc", "value": "finish_time"},
-                    "partitionby": "division",
-                    "range": {},
-                },
+                "value": {"orderby": {"sort": "asc", "value": "finish_time"}, "partitionby": "division", "range": {},},
             },
             "select": [
                 {"value": "name"},
                 {"name": "fastest_time", "over": "w1", "value": {"first_value": "finish_time"}},
                 {"name": "second_fastest", "over": "w1", "value": {"nth_value": ["finish_time", 2]}},
-            ]
+            ],
         }
         self.assertEqual(result, expected)
 
@@ -1362,22 +1358,21 @@ class TestBigQuery(TestCase):
                                 ]},
                             },
                         ],
-                        "from":
-                            {
-                                "select": {"all_columns": {}},
-                                "from": "first_stage",
-                                "qualify": {"eq": [
-                                    {"and": [
-                                        "agent_in",
-                                        {"ifnull": [{"over": "win", "value": {"lag": "agent_in"}}, False]},
-                                    ]},
-                                    False,
+                        "from": {
+                            "select": {"all_columns": {}},
+                            "from": "first_stage",
+                            "qualify": {"eq": [
+                                {"and": [
+                                    "agent_in",
+                                    {"ifnull": [{"over": "win", "value": {"lag": "agent_in"}}, False]},
                                 ]},
-                                "window": {
-                                    "name": "win",
-                                    "value": {"orderby": {"value": "event_created_at"}, "partitionby": "id"},
-                                },
+                                False,
+                            ]},
+                            "window": {
+                                "name": "win",
+                                "value": {"orderby": {"value": "event_created_at"}, "partitionby": "id"},
                             },
+                        },
                         "window": {
                             "name": "win",
                             "value": {"orderby": {"value": "event_created_at"}, "partitionby": "id"},
@@ -1654,7 +1649,10 @@ class TestBigQuery(TestCase):
         }
         self.assertEqual(result, expected)
         new_sql = format(result)
-        self.assertEqual(new_sql, """SELECT * FROM raw_data LEFT JOIN raw_data2 AS b ON raw_data.col1 = b.col2 CROSS JOIN UNNEST([raw_data2.cn1, raw_data2.cn2]) AS unnested_res""")
+        self.assertEqual(
+            new_sql,
+            """SELECT * FROM raw_data LEFT JOIN raw_data2 AS b ON raw_data.col1 = b.col2 CROSS JOIN UNNEST([raw_data2.cn1, raw_data2.cn2]) AS unnested_res""",
+        )
 
     def test_issue_224(self):
         sql = """
@@ -1679,16 +1677,14 @@ class TestBigQuery(TestCase):
         expected = {
             "from": [
                 "Produce",
-                {
-                    "pivot": {
-                        "aggregate": [
-                            {"value": {"max": "sales"}, "name": "max_sales"},
-                            {"value": {"min": "sales"}, "name": "min_sales"},
-                        ],
-                        "for": "quarter",
-                        "in": {"literal": ["Q1", "Q2", "Q3", "Q4"]},
-                    }
-                },
+                {"pivot": {
+                    "aggregate": [
+                        {"value": {"max": "sales"}, "name": "max_sales"},
+                        {"value": {"min": "sales"}, "name": "min_sales"},
+                    ],
+                    "for": "quarter",
+                    "in": {"literal": ["Q1", "Q2", "Q3", "Q4"]},
+                }},
             ],
             "select": {"all_columns": {}},
             "with": {

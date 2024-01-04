@@ -625,7 +625,7 @@ def to_unpivot_column(tokens):
     name = tokens["name"]
     if not name:
         return expr
-    return {"name": name['literal'], "value": expr}
+    return {"name": name["literal"], "value": expr}
 
 
 def to_pivot_column(tokens):
@@ -722,7 +722,7 @@ def to_table(tokens):
 def single_literal(tokens):
     val = str(tokens[0])
     start = val.index("'")
-    literal = '"""' + val[start+1:-1].replace("''", "\\'").replace('"', '\\"') + '"""'
+    literal = '"""' + val[start + 1 : -1].replace("''", "\\'").replace('"', '\\"') + '"""'
     encoding = val[0:start].lower()
     if encoding:
         return {f"literal": ast.literal_eval(literal), "encoding": encoding}
