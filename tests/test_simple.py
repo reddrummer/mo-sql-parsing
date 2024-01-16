@@ -1471,13 +1471,13 @@ class TestSimple(TestCase):
         sql = "select * from a join b using (*)"
         result = parse_mysql(sql, null=SQL_NULL, calls=simple_op, all_columns="*")
 
-        expected = {"from": [ "a", {"join": "b", "using": "*"}], "select": "*"}
+        expected = {"from": ["a", {"join": "b", "using": "*"}], "select": "*"}
         self.assertEqual(result, expected)
 
     def test_all_columns_is_column(self):
         sql = "select all_columns, * from a"
         result = parse(sql)
-        expected = {"from": "a", "select": [{"value": "all_columns"}, {"all_columns":{}}]}
+        expected = {"from": "a", "select": [{"value": "all_columns"}, {"all_columns": {}}]}
         self.assertEqual(result, expected)
         new_sql = format(result)
         self.assertEqual(new_sql, "SELECT all_columns, * FROM a")
@@ -1489,3 +1489,25 @@ class TestSimple(TestCase):
         self.assertEqual(result, expected)
         new_sql = format(result)
         self.assertEqual(new_sql, "SELECT * FROM a, b, c")
+
+    def test_issue_225(self):
+        sql = """select invoicedate, cast(year(InvoiceDate) as nchar(4)) +'-'+ cast(month(InvoiceDate) as nvarchar(2)) +'-'+ cast(day(InvoiceDate) as nvarchar(2)) as NewDateFormat from Invoice"""
+        result = parse(sql)
+        expected = {
+            "from": "Invoice",
+            "select": [
+                {"value": "invoicedate"},
+                {
+                    "name": "NewDateFormat",
+                    "value": {"add": [
+                        {"cast": [{"year": "InvoiceDate"}, {"nchar": 4}]},
+                        {"literal": "-"},
+                        {"cast": [{"month": "InvoiceDate"}, {"nvarchar": 2}]},
+                        {"literal": "-"},
+                        {"cast": [{"day": "InvoiceDate"}, {"nvarchar": 2}]},
+                    ]},
+                },
+            ],
+        }
+
+        self.assertEqual(result, expected)
