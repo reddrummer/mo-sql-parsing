@@ -3,7 +3,3 @@ mo-threads>=6.556.24070
 mo-files>=6.556.24070
 mo-streams>=1.556.24070
 zstandard>=0.22.0
-mo-future==7.546.24057
-mo-dots==9.578.24081
-mo-parsing==8.581.24094
-mo-imports==7.546.24057
