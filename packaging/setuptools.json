@@ -17,7 +17,7 @@
     "extras_require": {
         "dev": [],
         "tests": [
-            "mo-testing==7.562.24075",              "mo-threads",                "mo-files",
+            "mo-testing==7.562.24075", "mo-threads==6.562.24075",   "mo-files==6.562.24075",
                          "mo-streams",       "zstandard>=0.22.0"
         ]
     },
