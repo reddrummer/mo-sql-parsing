@@ -27,7 +27,7 @@ def mysql_parser(all_columns):
     utils.emit_warning_for_double_quotes = False
 
     mysql_string = regex_string | ansi_string | mysql_doublequote_string
-    atomic_ident = mysql_backtick_ident | sqlserver_ident | ident_w_dash
+    atomic_ident = mysql_backtick_ident | sqlserver_ident | ident_w_dash/no_dashes
     return parser(mysql_string, atomic_ident, all_columns=all_columns)
 
 
@@ -38,7 +38,7 @@ def sqlserver_parser(all_columns):
 
 def bigquery_parser(all_columns):
     mysql_string = regex_string | ansi_string | mysql_doublequote_string
-    atomic_ident = ansi_ident | mysql_backtick_ident | simple_ident
+    atomic_ident = ansi_ident | mysql_backtick_ident | ident_w_dash
     return parser(mysql_string, atomic_ident, all_columns=all_columns)
 
 
@@ -690,6 +690,7 @@ def parser(literal_string, simple_ident, all_columns=None, sqlserver=False):
                 assign("engine", EQ + identifier)
                 | assign("collate", EQ + identifier)
                 | assign("auto_increment", EQ + int_num)
+                | assign("autoincrement", EQ + int_num)
                 | assign("comment", EQ + literal_string)
                 | assign("default character set", EQ + identifier)
                 | assign("default charset", EQ + identifier)
