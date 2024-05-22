@@ -837,3 +837,72 @@ class TestSimple(TestCase):
         sql = """WITH table_test AS (\nSELECT public.categories.string_agg AS string_agg FROM public.categories\n) SELECT * FROM table_test\nUNION ALL\nSELECT * FROM table_test"""
         result = format(parse(sql))
         self.assertEqual(result, sql)
+
+    def test_and_or_nested_issue_238(self):     
+        where = {
+            "or": [
+                {
+                    "and": [
+                    {
+                        "gt": [
+                        "salary",
+                        1000
+                        ]
+                    },
+                    {
+                        "between": [
+                        "e.hired_date",
+                        {
+                            "literal": "2020-01-01"
+                        },
+                        {
+                            "literal": "2020-12-31"
+                        }
+                        ]
+                    }
+                    ]
+                },
+                {
+                    "and": [
+                    {
+                        "lt": [
+                        "salary",
+                        1000
+                        ]
+                    },
+                    {
+                        "between": [
+                        "e.hired_date",
+                        {
+                            "literal": "2021-01-01"
+                        },
+                        {
+                            "literal": "2021-12-31"
+                        }
+                        ]
+                    }
+                    ]
+                }
+                ]
+            }
+
+        ast = {
+            "select" : [
+                {
+                    "name": "total_cnt",
+                    "value": {
+                    "count": "*"
+                }
+                }
+            ],
+            "from": [
+                {
+                    "value": "foo"
+                }
+            ],
+            "where" : where
+        }
+        result = format(ast)
+        expected = "xyz"
+        self.assertEqual(result, expected)
+
